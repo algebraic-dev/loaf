@@ -4,7 +4,7 @@ type Nat : ★
 
 type Vec : Nat → ★ → ★
   | nil  : Π t: ★. Vec z t
-  | cons : Π t: ★. Π n: Nat. t -> Vec n t -> Vec (s n) t
+  | cons : Π t: ★. Π n: Nat. t → Vec n t → Vec (s n) t
 
 let add : Nat → Nat → Nat
   | z,     m = m

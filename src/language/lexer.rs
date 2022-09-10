@@ -29,7 +29,10 @@ fn is_reserved(chr: char) -> bool {
 }
 
 fn is_valid_id(chr: char) -> bool {
-    !is_useless(chr) && !is_reserved(chr)
+    match chr {
+        '0'..='9' | 'a' ..= 'z' | 'A' ..= 'Z' | '_' | '-' | '?' | '!' => true,
+        _ => false
+    }
 }
 
 impl<'a> Lexer<'a> {
@@ -130,7 +133,7 @@ impl<'a> Lexer<'a> {
                         Range { start, end },
                     ))
                 }
-                _ => {
+                c if is_valid_id(*c) => {
                     let acc = self.accumulate_while(&mut peekable, is_valid_id);
                     let end = self.pos.clone();
                     match acc.as_str() {
@@ -142,6 +145,9 @@ impl<'a> Lexer<'a> {
                         "else" => Ok((Token::Else, Range { start, end })),
                         _ => Ok((Token::Id(acc), Range { start, end })),
                     }
+                }
+                c => {
+                    Err(SyntaxError::UnexpectedChar(*c))
                 }
             },
         }
