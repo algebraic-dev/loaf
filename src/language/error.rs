@@ -1,6 +1,8 @@
-use crate::language::position::Point;
+use crate::language::position::{Point, Range};
+use crate::language::tokens::Token;
 
 #[derive(Debug)]
 pub enum SyntaxError {
-  UnfinishedString(Point)
+    UnfinishedString(Point),
+    Unexpected(Token, Range),
 }

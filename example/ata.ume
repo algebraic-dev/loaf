@@ -1,0 +1,15 @@
+type Nat : ★
+  | z : Nat
+  | s : Nat → Nat
+
+type Vec : Nat → ★ → ★
+  | nil  : Π t: ★. Vec z t
+  | cons : Π t: ★. Π n: Nat. t -> Vec n t -> Vec (s n) t
+
+let add : Nat → Nat → Nat
+  | z,     m = m
+  | (s n), m = s (add n m)
+
+let Nat  : ★          = Π p: ★. (p → p) → p → p
+let zero : Nat        = λp. λf. λz. z
+let succ : Nat → Nat  = λn. λp. λf. λz. λf. f (n p f z)
