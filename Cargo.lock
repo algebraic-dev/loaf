@@ -3,14 +3,6 @@
 version = 3
 
 [[package]]
-name = "Umeboshi"
-version = "0.1.0"
-dependencies = [
- "clap",
- "either",
-]
-
-[[package]]
 name = "atty"
 version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -200,6 +192,14 @@ name = "textwrap"
 version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1141d4d61095b28419e22cb0bbf02755f5e54e0526f97f1e3d1d160e60885fb"
+
+[[package]]
+name = "umeboshi"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "either",
+]
 
 [[package]]
 name = "unicode-ident"

@@ -3,7 +3,7 @@ use crate::language::position::Range;
 use either::Either;
 use std::fmt;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Ident {
     pub name: String,
     pub range: Range,
@@ -21,28 +21,34 @@ pub enum Expr {
         range: Range,
     },
     Lam {
+        range: Range,
         binder: Ident,
         body: Box<Expr>,
     },
     Pi {
+        range: Range,
         binder: Option<Ident>,
         typ: Box<Expr>,
         body: Box<Expr>,
     },
     Let {
+        range: Range,
         binder: Ident,
         typ: Option<Box<Expr>>,
         val: Box<Expr>,
         body: Box<Expr>,
     },
     Var {
+        range: Range,
         name: Ident,
     },
     App {
+        range: Range,
         reason: Box<Expr>,
         spine: Vec<Expr>,
     },
     If {
+        range: Range,
         cond: Box<Expr>,
         then: Box<Expr>,
         els: Box<Expr>,
@@ -79,6 +85,25 @@ pub struct TypeDecl {
 pub enum TopLevel {
     TypeDecl(TypeDecl),
     LetDecl(Decl),
+}
+
+pub trait Locate {
+    fn get_range(&self) -> Range;
+}
+
+impl Locate for Expr {
+    fn get_range(&self) -> Range {
+        use Expr::*;
+        match self {
+            Typ { range }     => range.clone(),
+            Lam { range, .. } => range.clone(),
+            Let { range, .. } => range.clone(),
+            Var { range, .. } => range.clone(),
+            App { range, .. } => range.clone(),
+            Pi { range, .. }  => range.clone(),
+            If { range, .. }  => range.clone(),
+        }
+    }
 }
 
 impl fmt::Display for Ident {
@@ -118,31 +143,35 @@ impl fmt::Display for Expr {
         use Expr::*;
         match self {
             Typ { range: _ } => write!(f, "★"),
-            Lam { binder, body } => write!(f, "(λ {}. {})", binder, body),
+            Lam { range: _, binder, body } => write!(f, "(λ {}. {})", binder, body),
             Pi {
+                range: _,
                 binder: Some(binder),
                 typ,
                 body,
             } => write!(f, "(Π {} : {} . {})", binder, typ, body),
             Pi {
+                range: _,
                 binder: None,
                 typ,
                 body,
             } => write!(f, "({} → {})", typ, body),
             Let {
-                binder,
+                range: _,
+                 binder,
                 typ: Some(typ),
                 val,
                 body,
             } => write!(f, "(let {} : {} = {} in {})", binder, typ, val, body),
             Let {
+                range: _,
                 binder,
                 typ: None,
                 val,
                 body,
             } => write!(f, "(let {} = {} in {})", binder, val, body),
-            Var { name } => write!(f, "{}", name),
-            App { reason, spine } => {
+            Var { range: _, name } => write!(f, "{}", name),
+            App { range: _, reason, spine } => {
                 if spine.len() == 0 {
                     write!(f, "{}", reason)
                 } else {
@@ -159,6 +188,7 @@ impl fmt::Display for Expr {
                 }
             }
             If {
+                range: _,
                 cond: _,
                 then: _,
                 els: _,

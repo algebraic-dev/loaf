@@ -36,12 +36,8 @@ impl Point {
 }
 
 impl Range {
-    pub fn new(start: Point, end: Point) -> Range {
-        Range { start, end }
-    }
-
-    pub fn new_start() -> Range {
-        Range::new(Point::new_start(), Point::new_start())
+    pub fn mix(&self, end: Range) -> Range {
+        Range { start: self.start.clone(), end: end.end }
     }
 }
 

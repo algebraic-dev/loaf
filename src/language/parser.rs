@@ -108,7 +108,7 @@ impl<'a> Parser<'a> {
         match self.get() {
             Token::Id(_) => {
                 let name = self.parse_id()?;
-                Ok(Expr::Var { name })
+                Ok(Expr::Var { name: name.clone(), range: name.range })
             }
             Token::Star => {
                 let (_, range) = self.eat(match_single!(Token::Star))?;
@@ -127,10 +127,15 @@ impl<'a> Parser<'a> {
     pub fn parse_call(&mut self) -> Result<Expr, SyntaxError> {
         let reason = self.parse_atom()?;
         let mut spine = Vec::new();
+        let mut last = reason.get_range();
         while let Token::Id(_) | Token::LPar | Token::Then | Token::Else = self.get() {
-            spine.push(self.parse_atom()?);
+            let expr = self.parse_atom()?;
+            last = expr.get_range();
+            spine.push(expr);
+            
         }
         Ok(Expr::App {
+            range: reason.get_range().mix(last),
             reason: Box::new(reason),
             spine,
         })
@@ -142,6 +147,7 @@ impl<'a> Parser<'a> {
             self.eat(match_single!(Token::Arrow))?;
             let body = self.parse_arrow()?;
             Ok(Expr::Pi {
+                range: typ.get_range().mix(body.get_range()),
                 binder: None,
                 typ: Box::new(typ),
                 body: Box::new(body),
@@ -154,30 +160,32 @@ impl<'a> Parser<'a> {
     pub fn parse_expr(&mut self) -> Result<Expr, SyntaxError> {
         match self.get() {
             Token::Lambda => {
-                self.eat(match_single!(Token::Lambda))?;
+                let (_, r) = self.eat(match_single!(Token::Lambda))?;
                 let binder = self.parse_id()?;
                 self.eat(match_single!(Token::Dot))?;
                 let body = self.parse_expr()?;
                 Ok(Expr::Lam {
+                    range: r.mix(body.get_range()),
                     binder,
                     body: Box::new(body),
                 })
             }
             Token::Pi => {
-                self.eat(match_single!(Token::Pi))?;
+                let (_, r) = self.eat(match_single!(Token::Pi))?;
                 let binder = self.parse_id()?;
                 self.eat(match_single!(Token::Colon))?;
                 let typ = self.parse_expr()?;
                 self.eat(match_single!(Token::Dot))?;
                 let body = self.parse_expr()?;
                 Ok(Expr::Pi {
+                    range: r.mix(body.get_range()),
                     binder: Some(binder),
                     typ: Box::new(typ),
                     body: Box::new(body),
                 })
             }
             Token::Let => {
-                self.eat(match_single!(Token::Let))?;
+                let (_, r) = self.eat(match_single!(Token::Let))?;
                 let binder = self.parse_id()?;
 
                 let typ = if let Token::Colon = self.get() {
@@ -192,6 +200,7 @@ impl<'a> Parser<'a> {
                 self.eat(match_single!(Token::In))?;
                 let body = self.parse_expr()?;
                 Ok(Expr::Let {
+                    range: r.mix(body.get_range()),
                     binder,
                     typ,
                     val: Box::new(val),
@@ -199,13 +208,18 @@ impl<'a> Parser<'a> {
                 })
             }
             Token::If => {
-                self.eat(match_single!(Token::If))?;
+                let (_, r) = self.eat(match_single!(Token::If))?;
                 let cond = Box::new(self.parse_expr()?);
                 self.eat(match_single!(Token::Then))?;
                 let then = Box::new(self.parse_expr()?);
                 self.eat(match_single!(Token::Else))?;
                 let els = Box::new(self.parse_expr()?);
-                Ok(Expr::If { cond, then, els })
+                Ok(Expr::If {
+                    range: r.mix(els.get_range()),
+                    cond,
+                    then,
+                    els
+                })
             }
             _ => self.parse_arrow(),
         }
@@ -229,7 +243,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_decl(&mut self) -> Result<Decl, SyntaxError> {
-        self.eat(match_single!(Token::Let))?;
+        let _ = self.eat(match_single!(Token::Let))?;
         let name = self.parse_id()?;
         self.eat(match_single!(Token::Colon))?;
         let typ = Box::new(self.parse_expr()?);

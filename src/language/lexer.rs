@@ -29,10 +29,7 @@ fn is_reserved(chr: char) -> bool {
 }
 
 fn is_valid_id(chr: char) -> bool {
-    match chr {
-        '0'..='9' | 'a' ..= 'z' | 'A' ..= 'Z' | '_' | '-' | '?' | '!' => true,
-        _ => false
-    }
+    return !is_reserved(chr) && !is_useless(chr)
 }
 
 impl<'a> Lexer<'a> {
