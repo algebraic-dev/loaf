@@ -22,6 +22,7 @@ macro_rules! match_single {
     };
 }
 
+#[derive(Clone)]
 pub struct Parser<'a> {
     lexer: Lexer<'a>,
     current_token: (Token, Range),
@@ -42,6 +43,19 @@ impl<'a> Parser<'a> {
 
     fn get(&self) -> &Token {
         &self.current_token.0
+    }
+
+    fn local_try<T>(&mut self, fun: fn(&mut Parser<'a>) -> Result<(T, Range), SyntaxError>) -> Option<(T, Range)> {
+        let mut cloned = self.clone();
+        match fun(&mut cloned) {
+            Err(_) => None,
+            Ok(res) => {
+                self.lexer = cloned.lexer;
+                self.current_token = cloned.current_token;
+                self.next_token = cloned.next_token;
+                Some(res)
+            },
+        }
     }
 
     fn advance(&mut self) -> Result<(Token, Range), SyntaxError> {
@@ -132,7 +146,6 @@ impl<'a> Parser<'a> {
             let expr = self.parse_atom()?;
             last = expr.get_range();
             spine.push(expr);
-            
         }
         Ok(Expr::App {
             range: reason.get_range().mix(last),
@@ -220,6 +233,30 @@ impl<'a> Parser<'a> {
                     then,
                     els
                 })
+            }
+            Token::LPar => {
+                // Essential part to decide if it's a pi type or not.
+                let res = self.local_try(|state| {
+                    let (_, init) = state.eat(match_single!(Token::LPar))?;
+                    let binder = state.parse_id()?;
+                    let (_, last) = state.eat(match_single!(Token::Colon))?;
+                    Ok((binder, init.mix(last)))
+                });
+                match res {
+                    Some((binder, init)) => {
+                        let typ = self.parse_expr()?;
+                        self.eat(match_single!(Token::RPar))?;
+                        self.eat(match_single!(Token::Arrow))?;
+                        let body = self.parse_expr()?;
+                        Ok(Expr::Pi {
+                            range: init.mix(body.get_range()),
+                            binder: Some(binder),
+                            typ: Box::new(typ),
+                            body: Box::new(body),
+                        })
+                    },
+                    None => self.parse_arrow()
+                }
             }
             _ => self.parse_arrow(),
         }

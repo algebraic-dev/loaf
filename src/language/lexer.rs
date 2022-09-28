@@ -5,6 +5,7 @@ use crate::language::tokens::Token;
 use std::iter::Peekable;
 use std::str::Chars;
 
+#[derive(Clone)]
 pub struct Lexer<'a> {
     input: &'a str,
     pos: Point,
@@ -140,6 +141,10 @@ impl<'a> Lexer<'a> {
                         "if" => Ok((Token::If, Range { start, end })),
                         "then" => Ok((Token::Then, Range { start, end })),
                         "else" => Ok((Token::Else, Range { start, end })),
+                        "fun" => Ok((Token::Lambda, Range { start, end })),
+                        "->" => Ok((Token::Arrow, Range { start, end })),
+                        "Type" => Ok((Token::Star, Range { start, end })),
+                        "forall" => Ok((Token::Pi, Range { start, end })),
                         _ => Ok((Token::Id(acc), Range { start, end })),
                     }
                 }
