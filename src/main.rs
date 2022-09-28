@@ -1,5 +1,5 @@
 mod language;
-
+mod core;
 use crate::language::parser::Parser;
 
 use clap::{Parser as P, Subcommand};
