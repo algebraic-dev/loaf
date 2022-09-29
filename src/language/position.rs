@@ -37,7 +37,10 @@ impl Point {
 
 impl Range {
     pub fn mix(&self, end: Range) -> Range {
-        Range { start: self.start.clone(), end: end.end }
+        Range {
+            start: self.start.clone(),
+            end: end.end,
+        }
     }
 }
 

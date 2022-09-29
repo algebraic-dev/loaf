@@ -1,9 +1,13 @@
-mod language;
 mod core;
-use crate::language::parser::Parser;
+mod elaborate;
+mod language;
+
+use language::parser::Parser;
+use elaborate::context::Context;
+use elaborate::infer;
 
 use clap::{Parser as P, Subcommand};
-use std::fs;
+use std::{fs};
 
 #[derive(P)]
 #[clap(author, version, about, long_about = None)]
@@ -25,15 +29,15 @@ fn main() {
             let mut contents =
                 fs::read_to_string(file).expect("Should have been able to read the file");
             let parser = Parser::init(&mut contents);
-            let res = parser.and_then(|mut parser| parser.parse_program());
+            let res = parser.and_then(|mut parser| parser.parse_expr());
             match res {
-                Ok(res) => println!(
-                    "Res {}",
-                    res.iter()
-                        .map(|x| format!("{}", x))
-                        .collect::<Vec<String>>()
-                        .join("\n")
-                ),
+                Ok(expr) => {
+                    let (elab, ty) = infer(&mut Context::empty_ctx(), &expr).expect("");
+                    println!("Parsed: {}", expr);
+                    println!("Elab: {}", elab);
+                    println!("Nf: {}",elab.eval(&im::Vector::new()).quote(0));
+                    println!("Ty: {}",ty.quote(0));
+                },
                 Err(err) => println!("Err {:?}", err),
             }
         }

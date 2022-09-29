@@ -45,7 +45,10 @@ impl<'a> Parser<'a> {
         &self.current_token.0
     }
 
-    fn local_try<T>(&mut self, fun: fn(&mut Parser<'a>) -> Result<(T, Range), SyntaxError>) -> Option<(T, Range)> {
+    fn local_try<T>(
+        &mut self,
+        fun: fn(&mut Parser<'a>) -> Result<(T, Range), SyntaxError>,
+    ) -> Option<(T, Range)> {
         let mut cloned = self.clone();
         match fun(&mut cloned) {
             Err(_) => None,
@@ -54,7 +57,7 @@ impl<'a> Parser<'a> {
                 self.current_token = cloned.current_token;
                 self.next_token = cloned.next_token;
                 Some(res)
-            },
+            }
         }
     }
 
@@ -122,7 +125,10 @@ impl<'a> Parser<'a> {
         match self.get() {
             Token::Id(_) => {
                 let name = self.parse_id()?;
-                Ok(Expr::Var { name: name.clone(), range: name.range })
+                Ok(Expr::Var {
+                    name: name.clone(),
+                    range: name.range,
+                })
             }
             Token::Star => {
                 let (_, range) = self.eat(match_single!(Token::Star))?;
@@ -147,11 +153,15 @@ impl<'a> Parser<'a> {
             last = expr.get_range();
             spine.push(expr);
         }
-        Ok(Expr::App {
-            range: reason.get_range().mix(last),
-            reason: Box::new(reason),
-            spine,
-        })
+        if spine.len() == 0 {
+            Ok(reason)
+        } else {
+            Ok(Expr::App {
+                range: reason.get_range().mix(last),
+                reason: Box::new(reason),
+                spine,
+            })
+        }
     }
 
     pub fn parse_arrow(&mut self) -> Result<Expr, SyntaxError> {
@@ -231,7 +241,7 @@ impl<'a> Parser<'a> {
                     range: r.mix(els.get_range()),
                     cond,
                     then,
-                    els
+                    els,
                 })
             }
             Token::LPar => {
@@ -254,8 +264,8 @@ impl<'a> Parser<'a> {
                             typ: Box::new(typ),
                             body: Box::new(body),
                         })
-                    },
-                    None => self.parse_arrow()
+                    }
+                    None => self.parse_arrow(),
                 }
             }
             _ => self.parse_arrow(),

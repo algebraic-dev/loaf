@@ -30,7 +30,7 @@ fn is_reserved(chr: char) -> bool {
 }
 
 fn is_valid_id(chr: char) -> bool {
-    return !is_reserved(chr) && !is_useless(chr)
+    return !is_reserved(chr) && !is_useless(chr);
 }
 
 impl<'a> Lexer<'a> {
@@ -148,9 +148,7 @@ impl<'a> Lexer<'a> {
                         _ => Ok((Token::Id(acc), Range { start, end })),
                     }
                 }
-                c => {
-                    Err(SyntaxError::UnexpectedChar(*c))
-                }
+                c => Err(SyntaxError::UnexpectedChar(*c)),
             },
         }
     }

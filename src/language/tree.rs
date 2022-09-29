@@ -95,13 +95,13 @@ impl Locate for Expr {
     fn get_range(&self) -> Range {
         use Expr::*;
         match self {
-            Typ { range }     => range.clone(),
+            Typ { range } => range.clone(),
             Lam { range, .. } => range.clone(),
             Let { range, .. } => range.clone(),
             Var { range, .. } => range.clone(),
             App { range, .. } => range.clone(),
-            Pi { range, .. }  => range.clone(),
-            If { range, .. }  => range.clone(),
+            Pi { range, .. } => range.clone(),
+            If { range, .. } => range.clone(),
         }
     }
 }
@@ -143,7 +143,11 @@ impl fmt::Display for Expr {
         use Expr::*;
         match self {
             Typ { range: _ } => write!(f, "★"),
-            Lam { range: _, binder, body } => write!(f, "(λ {}. {})", binder, body),
+            Lam {
+                range: _,
+                binder,
+                body,
+            } => write!(f, "(λ {}. {})", binder, body),
             Pi {
                 range: _,
                 binder: Some(binder),
@@ -158,7 +162,7 @@ impl fmt::Display for Expr {
             } => write!(f, "({} → {})", typ, body),
             Let {
                 range: _,
-                 binder,
+                binder,
                 typ: Some(typ),
                 val,
                 body,
@@ -171,7 +175,11 @@ impl fmt::Display for Expr {
                 body,
             } => write!(f, "(let {} = {} in {})", binder, val, body),
             Var { range: _, name } => write!(f, "{}", name),
-            App { range: _, reason, spine } => {
+            App {
+                range: _,
+                reason,
+                spine,
+            } => {
                 if spine.len() == 0 {
                     write!(f, "{}", reason)
                 } else {

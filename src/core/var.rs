@@ -1,7 +1,7 @@
-use std::slice::SliceIndex;
 
-#[derive(Clone, Copy)]
+
+#[derive(Debug, Clone, Copy)]
 pub struct Index(pub u32);
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Level(pub u32);

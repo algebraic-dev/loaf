@@ -1,0 +1,7 @@
+let ≡ : Π typ: ★. ★
+ = λt. ★
+in
+let refl : Π typ: ★ . (≡ typ)
+ = λt. ★
+in
+≡
