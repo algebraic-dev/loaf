@@ -17,6 +17,7 @@ pub fn eval_app(stuck: Rc<Value>, spine: &[Rc<Value>]) -> Rc<Value> {
                 eval_app(closure.add(spine[0].clone()).apply(), &spine[1..])
             }
         }
+        _ if spine.len() == 0 => stuck,
         res => unreachable!("Internal error: Eval app {:?}", res),
     }
 }

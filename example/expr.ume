@@ -1,7 +1,21 @@
-let ≡ : Π typ: ★. ★
- = λt. ★
+let ℕ : ★
+ = Π nat: ★. (nat → nat) → nat → nat
 in
-let refl : Π typ: ★ . (≡ typ)
- = λt. ★
+let z : ℕ
+ = λt. λs. λz. z
 in
-≡
+let s : ℕ → ℕ
+ = λn. λt. λs. λz. s (n t s z)
+in
+let eq_t : ★
+ = Π typ: ★. typ → typ → ★
+in
+let ≡ : eq_t
+ = λt. λa. λb. Πeq: eq_t. (Πtp:★. Πa:tp. (eq tp a a)) → eq t a b
+in
+let refl : Πtyp: ★. Πa:typ. (≡ typ a a)
+ = λt. λb. λeq. λref. (ref t b)
+in
+let f : ≡ ℕ z (s z)
+ = refl ℕ z
+in f
