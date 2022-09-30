@@ -1,5 +1,3 @@
-
-
 #[derive(Debug, Clone, Copy)]
 pub struct Index(pub u32);
 

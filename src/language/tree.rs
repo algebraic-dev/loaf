@@ -15,21 +15,10 @@ pub enum Pat {
     Absurd,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expr {
     Typ {
         range: Range,
-    },
-    Lam {
-        range: Range,
-        binder: Ident,
-        body: Box<Expr>,
-    },
-    Pi {
-        range: Range,
-        binder: Option<Ident>,
-        typ: Box<Expr>,
-        body: Box<Expr>,
     },
     Let {
         range: Range,
@@ -42,17 +31,62 @@ pub enum Expr {
         range: Range,
         name: Ident,
     },
+    Hlp { range: Range },
+
+    // Dependent function
+
+    Pi {
+        range: Range,
+        binder: Option<Ident>,
+        typ: Box<Expr>,
+        body: Box<Expr>,
+    },
+    Lam {
+        range: Range,
+        binder: Ident,
+        body: Box<Expr>,
+    },
     App {
         range: Range,
         reason: Box<Expr>,
         spine: Vec<Expr>,
     },
+
+    // Dependent sigma
+
+    Sigma {
+        range: Range,
+        binder: Option<Ident>,
+        typ: Box<Expr>,
+        body: Box<Expr>,
+    },
+    Pair {
+        range: Range,
+        fst: Box<Expr>,
+        snd: Box<Expr>,
+    },
+    Left {
+        range: Range,
+        expr: Box<Expr>
+    },
+    Right {
+        range: Range,
+        expr: Box<Expr>
+    },
+
+    // Other
+
     If {
         range: Range,
         cond: Box<Expr>,
         then: Box<Expr>,
         els: Box<Expr>,
     },
+    Ann {
+        range: Range,
+        expr: Box<Expr>,
+        typ: Box<Expr>,
+    }
 }
 
 #[derive(Debug)]
@@ -102,6 +136,12 @@ impl Locate for Expr {
             App { range, .. } => range.clone(),
             Pi { range, .. } => range.clone(),
             If { range, .. } => range.clone(),
+            Ann { range, .. } => range.clone(),
+            Sigma { range, .. } => range.clone(),
+            Hlp { range, .. } => range.clone(),
+            Pair { range, .. } => range.clone(),
+            Left { range, .. } => range.clone(),
+            Right { range, .. } => range.clone(),
         }
     }
 }
@@ -116,7 +156,7 @@ impl fmt::Display for Pat {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Pat::Cons { first, spine } => {
-                if spine.len() == 0 {
+                if spine.is_empty() {
                     write!(f, "{}", first)
                 } else {
                     write!(
@@ -143,6 +183,7 @@ impl fmt::Display for Expr {
         use Expr::*;
         match self {
             Typ { range: _ } => write!(f, "★"),
+            Hlp { range : _ } => write!(f, "?"),
             Lam {
                 range: _,
                 binder,
@@ -154,12 +195,42 @@ impl fmt::Display for Expr {
                 typ,
                 body,
             } => write!(f, "(Π {} : {} . {})", binder, typ, body),
+            Ann {
+                range: _,
+                expr,
+                typ,
+            } => write!(f, "({} : {})", expr, typ),
             Pi {
                 range: _,
                 binder: None,
                 typ,
                 body,
             } => write!(f, "({} → {})", typ, body),
+            Sigma {
+                range: _,
+                binder: None,
+                typ,
+                body,
+            } => write!(f, "⟨{}, {}⟩", typ, body),
+            Sigma {
+                range: _,
+                binder: Some(name),
+                typ,
+                body,
+            } => write!(f, "(Σ {} : {}, {})", name, typ, body),
+            Pair {
+                range: _,
+                fst,
+                snd,
+            } => write!(f, "⟨{}, {}⟩", fst, snd),
+            Left {
+                range: _,
+                expr,
+            } => write!(f, "(π1 {})", expr),
+            Right {
+                range: _,
+                expr,
+            } => write!(f, "(π2 {})", expr),
             Let {
                 range: _,
                 binder,
@@ -180,7 +251,7 @@ impl fmt::Display for Expr {
                 reason,
                 spine,
             } => {
-                if spine.len() == 0 {
+                if spine.is_empty() {
                     write!(f, "{}", reason)
                 } else {
                     write!(

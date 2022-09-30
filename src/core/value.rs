@@ -4,7 +4,7 @@ use super::{term::Term, var};
 
 pub type Spine = Vec<Rc<Value>>;
 
-pub type Env = im::Vector<Rc<Value>>;
+pub type Env = im::Vector<(String, Rc<Value>)>;
 
 #[derive(Debug)]
 pub enum Value {
@@ -17,6 +17,18 @@ pub enum Value {
     // Lambda
     Lam(String, Closure),
 
+    // Dependent function type
+    Sigma(String, Rc<Value>, Closure),
+
+    // Dependent pair
+    Pair(Rc<Value>, Rc<Value>),
+
+    // Left
+    Left(Rc<Value>),
+
+    // Right
+    Right(Rc<Value>),
+
     // Universe / Type of Types.
     Universe,
 }
@@ -26,7 +38,7 @@ pub enum Stuck {
     Rigid(var::Level),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Closure {
     pub env: Env,
     pub term: Rc<Term>,

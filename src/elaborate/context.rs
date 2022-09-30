@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use crate::core::value::{Env, Value};
 use crate::core::var;
-use crate::language::position::{Range, Point};
+use crate::language::position::{Point, Range};
 
 #[derive(Clone, Debug)]
 pub struct Context {
@@ -18,7 +18,10 @@ impl Context {
             depth: 0,
             vars: im::Vector::new(),
             types: im::hashmap::HashMap::new(),
-            pos: Range { start: Point { column: 0, line: 0 }, end: Point { column: 0, line: 0 }  }
+            pos: Range {
+                start: Point { column: 0, line: 0 },
+                end: Point { column: 0, line: 0 },
+            },
         }
     }
 }
@@ -28,24 +31,24 @@ impl Context {
         self.pos = range.clone();
     }
 
-    pub fn bind(&self, str: String, ty: Rc<Value>) -> Context {
+    pub fn bind(&self, name: String, ty: Rc<Value>) -> Context {
         let mut vars = self.vars.clone();
-        vars.push_front(Rc::new(Value::var(var::Level(self.depth))));
+        vars.push_front((name.clone(), Rc::new(Value::var(var::Level(self.depth)))));
         Context {
             depth: self.depth + 1,
             vars,
-            types: self.types.update(str, (ty, self.depth)),
+            types: self.types.update(name, (ty, self.depth)),
             pos: self.pos.clone(),
         }
     }
 
-    pub fn define(&self, str: String, val: Rc<Value>, typ: Rc<Value>) -> Context {
+    pub fn define(&self, name: String, val: Rc<Value>, typ: Rc<Value>) -> Context {
         let mut vars = self.vars.clone();
-        vars.push_front(val);
+        vars.push_front((name.clone(), val));
         Context {
             depth: self.depth + 1,
             vars,
-            types: self.types.update(str, (typ, self.depth)),
+            types: self.types.update(name, (typ, self.depth)),
             pos: self.pos.clone(),
         }
     }

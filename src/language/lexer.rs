@@ -12,25 +12,24 @@ pub struct Lexer<'a> {
 }
 
 fn is_digit(chr: char) -> bool {
-    chr >= '0' && chr <= '9'
+    ('0'..='9').contains(&chr)
 }
 
 fn is_useless(chr: char) -> bool {
-    match chr {
-        '\n' | '\r' | '\t' | ' ' => true,
-        _ => false,
-    }
+    matches!(chr, '\n' | '\r' | '\t' | ' ')
 }
 
 fn is_reserved(chr: char) -> bool {
-    match chr {
-        '(' | ')' | '.' | ':' | '|' | '=' | 'λ' | '→' | '★' | 'Π' => true,
-        _ => false,
-    }
+    matches!(
+        chr,
+        '(' | ')' | '.' | ':' | '|' | '=' |
+        'λ' | '→' | '★' | 'Π' | ',' | '⟨' |
+        '⟩' | 'Σ'
+    )
 }
 
 fn is_valid_id(chr: char) -> bool {
-    return !is_reserved(chr) && !is_useless(chr);
+    !is_reserved(chr) && !is_useless(chr)
 }
 
 impl<'a> Lexer<'a> {
@@ -111,6 +110,10 @@ impl<'a> Lexer<'a> {
                 '→' => self.single_token(&mut peekable, Token::Arrow),
                 '★' => self.single_token(&mut peekable, Token::Star),
                 'Π' => self.single_token(&mut peekable, Token::Pi),
+                'Σ' => self.single_token(&mut peekable, Token::Sigma),
+                '⟨' => self.single_token(&mut peekable, Token::LBracket),
+                '?' => self.single_token(&mut peekable, Token::Hlp),
+                '⟩' => self.single_token(&mut peekable, Token::RBracket),
                 '"' => {
                     self.next_char(&mut peekable);
                     let string = self.accumulate_while(&mut peekable, |x| x != '"');
@@ -145,6 +148,8 @@ impl<'a> Lexer<'a> {
                         "->" => Ok((Token::Arrow, Range { start, end })),
                         "Type" => Ok((Token::Star, Range { start, end })),
                         "forall" => Ok((Token::Pi, Range { start, end })),
+                        "π-1" => Ok((Token::Left, Range { start, end })),
+                        "π-2" => Ok((Token::Right, Range { start, end })),
                         _ => Ok((Token::Id(acc), Range { start, end })),
                     }
                 }

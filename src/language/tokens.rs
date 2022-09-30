@@ -12,6 +12,10 @@ pub enum Token {
     Comma,       // ,
     Pipe,        // |
     Eq,          // =
+    LBracket,    // ⟨
+    RBracket,    // ⟩
+    Sigma,       // Σ
+    Hlp,         // ?
 
     // Keywords
     In,   // in
@@ -27,6 +31,9 @@ pub enum Token {
     Arrow,  // →
     Star,   // ★
     Pi,     // Π
+
+    Left,   // π-1
+    Right   // π-2
 }
 
 impl fmt::Display for Token {
@@ -54,7 +61,13 @@ impl fmt::Display for Token {
             Lambda => write!(f, "'λ'"),
             Arrow => write!(f, "'→'"),
             Star => write!(f, "'★'"),
+            Hlp => write!(f, "?"),
             Pi => write!(f, "'Π'"),
+            LBracket => write!(f, "'⟨'"),
+            RBracket => write!(f, "'⟩'"),
+            Sigma => write!(f, "'Σ'"),
+            Left => write!(f, "'π-1'"),
+            Right => write!(f, "'π-2'"),
         }
     }
 }

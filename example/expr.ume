@@ -1,21 +1,12 @@
-let ℕ : ★
- = Π nat: ★. (nat → nat) → nat → nat
-in
-let z : ℕ
- = λt. λs. λz. z
-in
-let s : ℕ → ℕ
- = λn. λt. λs. λz. s (n t s z)
-in
-let eq_t : ★
- = Π typ: ★. typ → typ → ★
-in
-let ≡ : eq_t
- = λt. λa. λb. Πeq: eq_t. (Πtp:★. Πa:tp. (eq tp a a)) → eq t a b
-in
-let refl : Πtyp: ★. Πa:typ. (≡ typ a a)
- = λt. λb. λeq. λref. (ref t b)
-in
-let f : ≡ ℕ z (s z)
- = refl ℕ z
-in f
+let Void   : ★ = (x: ★) -> x in
+let elim-0 : (a: Void -> ★) -> (x: Void) -> a x = λmotive. λob. ob (motive ob) in
+let absurd : (a: ★) -> (x: Void) -> a = λt. λvoid. elim-0 (λx. t) void in
+
+let Nat : ★ = (nat: ★) -> (s: nat -> nat) -> (z: nat) -> nat in
+let z   : Nat = λnat. λs. λz. z in
+let s   : Nat -> Nat = λn. λnat. λs. λz. s (n nat s z) in
+
+let Unit : ★  = (x: ★) -> x -> x in
+let unit : Unit = λx. λu. u in
+let elim-1 : (a: Unit -> ★) -> (x: a unit) -> (y: Unit) -> a y = λmotive. λx. λy. π-2 (y (Σ xe : Unit . motive xe) (⟨unit, x⟩)) in
+★

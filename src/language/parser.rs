@@ -89,10 +89,7 @@ impl<'a> Parser<'a> {
             Token::Id(res) => Some(res.clone()),
             _ => None,
         })?;
-        Ok(Ident {
-            name: name.to_string(),
-            range,
-        })
+        Ok(Ident { name, range })
     }
 
     pub fn parse_pat(&mut self) -> Result<Pat, SyntaxError> {
@@ -130,6 +127,10 @@ impl<'a> Parser<'a> {
                     range: name.range,
                 })
             }
+            Token::Hlp => {
+                let (_, range) = self.eat(match_single!(Token::Hlp))?;
+                Ok(Expr::Hlp { range })
+            }
             Token::Star => {
                 let (_, range) = self.eat(match_single!(Token::Star))?;
                 Ok(Expr::Typ { range })
@@ -140,6 +141,18 @@ impl<'a> Parser<'a> {
                 self.eat(match_single!(Token::RPar))?;
                 Ok(res)
             }
+            Token::LBracket => {
+                let (_, init) = self.eat(match_single!(Token::LBracket))?;
+                let fst = self.parse_expr()?;
+                self.eat(match_single!(Token::Comma))?;
+                let snd = self.parse_expr()?;
+                let (_, end) = self.eat(match_single!(Token::RBracket))?;
+                Ok(Expr::Pair {
+                    range: init.mix(end),
+                    fst: Box::new(fst),
+                    snd: Box::new(snd)
+                })
+            }
             _ => self.fail(),
         }
     }
@@ -148,12 +161,21 @@ impl<'a> Parser<'a> {
         let reason = self.parse_atom()?;
         let mut spine = Vec::new();
         let mut last = reason.get_range();
-        while let Token::Id(_) | Token::LPar | Token::Then | Token::Else = self.get() {
-            let expr = self.parse_atom()?;
-            last = expr.get_range();
-            spine.push(expr);
+        loop {
+            let res = self.local_try(|state| {
+                let res = state.parse_atom()?;
+                let range = res.get_range();
+                Ok((res, range))
+            });
+            match res {
+                Some((expr, range)) => {
+                    last = range;
+                    spine.push(expr);
+                }
+                None => break,
+            }
         }
-        if spine.len() == 0 {
+        if spine.is_empty() {
             Ok(reason)
         } else {
             Ok(Expr::App {
@@ -168,12 +190,20 @@ impl<'a> Parser<'a> {
         let typ = self.parse_call()?;
         if let Token::Arrow = self.get() {
             self.eat(match_single!(Token::Arrow))?;
-            let body = self.parse_arrow()?;
+            let body = self.parse_expr()?;
             Ok(Expr::Pi {
                 range: typ.get_range().mix(body.get_range()),
                 binder: None,
                 typ: Box::new(typ),
                 body: Box::new(body),
+            })
+        } else if let Token::Colon = self.get() {
+            self.eat(match_single!(Token::Colon))?;
+            let body = self.parse_expr()?;
+            Ok(Expr::Ann {
+                range: typ.get_range().mix(body.get_range()),
+                expr: Box::new(typ),
+                typ: Box::new(body),
             })
         } else {
             Ok(typ)
@@ -182,6 +212,22 @@ impl<'a> Parser<'a> {
 
     pub fn parse_expr(&mut self) -> Result<Expr, SyntaxError> {
         match self.get() {
+            Token::Left => {
+                let (_, r) = self.eat(match_single!(Token::Left))?;
+                let expr = self.parse_atom()?;
+                Ok(Expr::Left {
+                    range: r.mix(expr.get_range()),
+                    expr: Box::new(expr)
+                })
+            }
+            Token::Right => {
+                let (_, r) = self.eat(match_single!(Token::Right))?;
+                let expr = self.parse_atom()?;
+                Ok(Expr::Right {
+                    range: r.mix(expr.get_range()),
+                    expr: Box::new(expr)
+                })
+            }
             Token::Lambda => {
                 let (_, r) = self.eat(match_single!(Token::Lambda))?;
                 let binder = self.parse_id()?;
@@ -190,6 +236,20 @@ impl<'a> Parser<'a> {
                 Ok(Expr::Lam {
                     range: r.mix(body.get_range()),
                     binder,
+                    body: Box::new(body),
+                })
+            }
+            Token::Sigma => {
+                let (_, r) = self.eat(match_single!(Token::Sigma))?;
+                let binder = self.parse_id()?;
+                self.eat(match_single!(Token::Colon))?;
+                let typ = self.parse_expr()?;
+                self.eat(match_single!(Token::Dot))?;
+                let body = self.parse_expr()?;
+                Ok(Expr::Sigma {
+                    range: r.mix(body.get_range()),
+                    binder: Some(binder),
+                    typ: Box::new(typ),
                     body: Box::new(body),
                 })
             }
@@ -352,6 +412,7 @@ impl<'a> Parser<'a> {
                 _ => self.fail()?,
             }
         }
+        self.eat(match_single!(Token::Eof))?;
         Ok(program)
     }
 }

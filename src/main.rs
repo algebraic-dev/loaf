@@ -2,9 +2,10 @@ mod core;
 mod elaborate;
 mod language;
 
+use elaborate::errors::CompilerError;
 use language::parser::Parser;
-use elaborate::{context::Context, CompilerError};
-use elaborate::infer;
+use elaborate::{context::Context};
+use elaborate::expr::infer;
 
 use clap::{Parser as P, Subcommand};
 use std::{fs};
@@ -27,7 +28,7 @@ fn main() {
     match cli.command {
         Command::Compile { file } => {
             let mut contents =
-                fs::read_to_string(file).expect("Should have been able to read the file");
+                fs::read_to_string(file.clone()).expect("Should have been able to read the file");
             let parser = Parser::init(&mut contents);
             let res = parser.and_then(|mut parser| parser.parse_expr());
             match res {
@@ -40,7 +41,13 @@ fn main() {
                             println!("Ty: {}",ty.quote(0));
                         }
                         Err(CompilerError::TypeMismatch(ctx, l, r)) => {
-                            println!("Mismatch between\n expected: '{}'\n      got: '{}'", l.quote(ctx.depth), r.quote(ctx.depth))
+                            let dep = ctx.depth;
+                            for (name, (typ, _)) in &ctx.types {
+                                println!("{:10} : {}", name, typ.quote(dep).pair_with(ctx.clone()))
+                            }
+                            println!("\n");
+                            println!("On: {}:{}", file, ctx.pos);
+                            println!("Mismatch between\n expected: '{}'\n      got: '{}'", l.quote(dep).pair_with(ctx.clone()), r.quote(dep).pair_with(ctx))
                         }
                         Err(err) => {
                             println!("Err {:?}", err)

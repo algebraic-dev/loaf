@@ -46,7 +46,7 @@ impl Range {
 
 impl fmt::Display for Point {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}:{}", self.column, self.line)
+        write!(f, "{}:{}", self.line, self.column)
     }
 }
 
