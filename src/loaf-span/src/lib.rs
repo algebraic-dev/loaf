@@ -13,6 +13,12 @@ pub struct Range {
     pub end: Position,
 }
 
+#[derive(Debug, Clone)]
+pub enum Span {
+    Localized(Range),
+    Generated
+}
+
 pub trait Locatable {
     fn locate(&self) -> Range;
 }
