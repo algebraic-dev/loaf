@@ -16,15 +16,15 @@ impl<'cache> Parser<'cache> {
         match self.get() {
             Token::Id(_) => {
                 let (name, range) = eat_single!(self, Token::Id(res) => res.clone())?;
-                Ok(Expr::Var(Var{
+                Ok(Expr::Var(Var {
                     name: Ident::new(name, range.clone()),
                     range,
                 }))
             }
-            Token::Hlp => Ok(Expr::Hlp (Hlp {
+            Token::Hlp => Ok(Expr::Hlp(Hlp {
                 range: eat_single!(self, Token::Hlp)?.1,
             })),
-            Token::Star => Ok(Expr::Typ (Typ {
+            Token::Star => Ok(Expr::Typ(Typ {
                 range: eat_single!(self, Token::Star)?.1,
             })),
             _ => self.fail(),
@@ -42,7 +42,7 @@ impl<'cache> Parser<'cache> {
         if spine.is_empty() {
             Ok(head)
         } else {
-            Ok(Expr::App (App {
+            Ok(Expr::App(App {
                 range: head.locate().mix(last),
                 head: Box::new(head),
                 spine,
@@ -57,7 +57,7 @@ impl<'cache> Parser<'cache> {
         eat_single!(self, Token::RPar)?;
         eat_single!(self, Token::Arrow)?;
         let body = self.parse_expr()?;
-        Ok(Expr::Pi (Pi {
+        Ok(Expr::Pi(Pi {
             range: range.mix(body.locate()),
             binder: Some(Ident::new(name, id_range)),
             typ: Box::new(typ),
@@ -69,7 +69,7 @@ impl<'cache> Parser<'cache> {
         if let Token::Arrow = self.get() {
             eat_single!(self, Token::Arrow)?;
             let body = self.parse_expr()?;
-            Ok(Expr::Pi (Pi {
+            Ok(Expr::Pi(Pi {
                 range: start.mix(body.locate()),
                 binder: None,
                 typ: Box::new(head),
@@ -111,7 +111,7 @@ impl<'cache> Parser<'cache> {
         let val = self.parse_expr()?;
         eat_single!(self, Token::In)?;
         let body = self.parse_expr()?;
-        Ok(Expr::Let (Let {
+        Ok(Expr::Let(Let {
             range: r.mix(body.locate()),
             binder,
             typ,
@@ -125,7 +125,7 @@ impl<'cache> Parser<'cache> {
         let binder = self.parse_id()?;
         eat_single!(self, Token::Dot)?;
         let body = self.parse_expr()?;
-        Ok(Expr::Lam (Lam {
+        Ok(Expr::Lam(Lam {
             range: r.mix(body.locate()),
             binder,
             body: Box::new(body),
@@ -135,7 +135,7 @@ impl<'cache> Parser<'cache> {
     pub fn parse_left(&mut self) -> Result<Expr, SyntaxError> {
         let (_, r) = eat_single!(self, Token::Left)?;
         let expr = self.parse_atom()?;
-        Ok(Expr::Left (Left {
+        Ok(Expr::Left(Left {
             range: r.mix(expr.locate()),
             expr: Box::new(expr),
         }))
@@ -148,7 +148,7 @@ impl<'cache> Parser<'cache> {
         let typ = self.parse_expr()?;
         eat_single!(self, Token::Dot)?;
         let body = self.parse_expr()?;
-        Ok(Expr::Sigma (Sigma {
+        Ok(Expr::Sigma(Sigma {
             range: r.mix(body.locate()),
             binder: Some(binder),
             typ: Box::new(typ),
@@ -159,7 +159,7 @@ impl<'cache> Parser<'cache> {
     pub fn parse_right(&mut self) -> Result<Expr, SyntaxError> {
         let (_, r) = eat_single!(self, Token::Right)?;
         let expr = self.parse_atom()?;
-        Ok(Expr::Right (Right {
+        Ok(Expr::Right(Right {
             range: r.mix(expr.locate()),
             expr: Box::new(expr),
         }))
@@ -172,7 +172,7 @@ impl<'cache> Parser<'cache> {
         let typ = self.parse_expr()?;
         eat_single!(self, Token::Dot)?;
         let body = self.parse_expr()?;
-        Ok(Expr::Pi (Pi {
+        Ok(Expr::Pi(Pi {
             range: r.mix(body.locate()),
             binder: Some(binder),
             typ: Box::new(typ),

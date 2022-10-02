@@ -16,7 +16,7 @@ pub struct Range {
 #[derive(Debug, Clone)]
 pub enum Span {
     Localized(Range),
-    Generated
+    Generated,
 }
 
 pub trait Locatable {

@@ -93,24 +93,24 @@ pub enum Expr {
     Pair(Pair),
     Left(Left),
     Right(Right),
-    Ann(Ann)
+    Ann(Ann),
 }
 
 impl Locatable for Expr {
     fn locate(&self) -> Range {
         match self {
-            Expr::Typ (Typ { range }) => range.clone(),
-            Expr::Lam (Lam { range, .. }) => range.clone(),
-            Expr::Let (Let { range, .. }) => range.clone(),
-            Expr::Var (Var { range, .. }) => range.clone(),
-            Expr::App (App { range, .. }) => range.clone(),
-            Expr::Pi (Pi { range, .. }) => range.clone(),
-            Expr::Ann (Ann { range, .. }) => range.clone(),
-            Expr::Sigma (Sigma { range, .. }) => range.clone(),
-            Expr::Hlp (Hlp { range, .. }) => range.clone(),
-            Expr::Pair (Pair { range, .. }) => range.clone(),
-            Expr::Left (Left { range, .. }) => range.clone(),
-            Expr::Right (Right { range, .. }) => range.clone(),
+            Expr::Typ(Typ { range }) => range.clone(),
+            Expr::Lam(Lam { range, .. }) => range.clone(),
+            Expr::Let(Let { range, .. }) => range.clone(),
+            Expr::Var(Var { range, .. }) => range.clone(),
+            Expr::App(App { range, .. }) => range.clone(),
+            Expr::Pi(Pi { range, .. }) => range.clone(),
+            Expr::Ann(Ann { range, .. }) => range.clone(),
+            Expr::Sigma(Sigma { range, .. }) => range.clone(),
+            Expr::Hlp(Hlp { range, .. }) => range.clone(),
+            Expr::Pair(Pair { range, .. }) => range.clone(),
+            Expr::Left(Left { range, .. }) => range.clone(),
+            Expr::Right(Right { range, .. }) => range.clone(),
         }
     }
 }
@@ -152,7 +152,7 @@ impl fmt::Display for Sigma {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &self.binder {
             Some(binder) => write!(f, "(Σ {} : {} . {})", binder, self.typ, self.body),
-            None => write!(f, "(Σ {} . {})", self.typ, self.body)
+            None => write!(f, "(Σ {} . {})", self.typ, self.body),
         }
     }
 }
@@ -179,7 +179,7 @@ impl fmt::Display for Let {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &self.typ {
             Some(x) => write!(f, "(let {} : {} = {} in {})", self.binder, x, self.val, self.body),
-            None => write!(f, "(let {} = {} in {})", self.binder, self.val, self.body)
+            None => write!(f, "(let {} = {} in {})", self.binder, self.val, self.body),
         }
     }
 }
@@ -209,10 +209,10 @@ impl fmt::Display for Expr {
             Lam(x) => write!(f, "{}", x),
             Pi(x) => write!(f, "{}", x),
             Ann(x) => write!(f, "{}", x),
-            Sigma(x)  => write!(f, "{}", x),
-            Pair(x)  => write!(f, "{}", x),
-            Left(x)  => write!(f, "{}", x),
-            Right(x)  => write!(f, "{}", x),
+            Sigma(x) => write!(f, "{}", x),
+            Pair(x) => write!(f, "{}", x),
+            Left(x) => write!(f, "{}", x),
+            Right(x) => write!(f, "{}", x),
             Let(x) => write!(f, "{}", x),
             Var(x) => write!(f, "{}", x),
             App(x) => write!(f, "{}", x),
