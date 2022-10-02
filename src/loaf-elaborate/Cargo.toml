@@ -1,0 +1,12 @@
+[package]
+name = "loaf-elaborate"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+loaf-core = { path = "../loaf-core" }
+loaf-span = { path = "../loaf-span" }
+loaf-tree = { path = "../loaf-tree" }
+im = "15.1.0"
