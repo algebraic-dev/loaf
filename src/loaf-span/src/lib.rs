@@ -23,7 +23,7 @@ impl Position {
     }
 
     pub fn new_start() -> Position {
-        Position::new(1, 1, 0)
+        Position::new(0, 0, 0)
     }
 
     pub fn next(&self, chr: char) -> Position {
