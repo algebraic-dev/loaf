@@ -1,6 +1,6 @@
 use crate::error::{Annotation, Color, ErrorMessage, Marked, Phrase, Severity, Style};
 use core::fmt;
-use std::{cmp::{Ordering, self}, collections::HashMap, fmt::Write};
+use std::{cmp::Ordering, collections::HashMap, fmt::Write};
 
 #[macro_export]
 macro_rules! write_mult {
@@ -44,11 +44,36 @@ pub struct RenderConfig<'a> {
     pub indent: usize,
 }
 
-// Group of markers just to make error messages
-// beautiful and smaller.
-pub struct SourceGroup {
-    pub line_range: (u32, u32),
-    pub markers: Vec<Annotation>,
+impl<'a> RenderConfig<'a> {
+    pub fn ascii() -> RenderConfig<'a> {
+        RenderConfig {
+            chars: Chars {
+                vbar: "│",
+                bullet: "•",
+                vbar_pont: "┆",
+                turnl: "└",
+                hbar: "─",
+                downright: "└",
+                upright: "┌",
+                sidedown: "┬",
+            },
+            colors: Colors {
+                fg_fst: "\x1b[31m",
+                fg_snd: "\x1b[34m",
+                fg_trd: "\x1b[32m",
+                fg_fth: "\x1b[33m",
+                fg_fft: "\x1b[36m",
+                bg_fst: "\x1b[41m",
+                bg_snd: "\x1b[44m",
+                bg_trd: "\x1b[42m",
+                bg_fth: "\x1b[43m",
+                bright: "\x1b[1m",
+                dim: "\x1b[2m",
+                reset: "\x1b[0m",
+            },
+            indent: 4,
+        }
+    }
 }
 
 pub fn group_markers<'a>(markers: &'a mut [Annotation]) -> (HashMap<u32, Vec<&'a Annotation>>, Vec<&'a Annotation>, Vec<u32>) {
@@ -122,13 +147,13 @@ pub fn split_on(text: String, on: usize) -> (String, String) {
     for _ in 0..on {
         match iter.next() {
             Some(x) => st.push(x),
-            None => ()
+            None => (),
         };
     }
     (st, iter.collect())
 }
 
-pub fn color_text<'a>(config: &RenderConfig, text: String, markers: &[&Annotation]) -> Result<String, fmt::Error> {
+pub fn color_text(config: &RenderConfig, text: String, markers: &[&Annotation]) -> Result<String, fmt::Error> {
     let mut line = String::new();
     let mut old = text;
     let mut max = 0;
@@ -137,7 +162,7 @@ pub fn color_text<'a>(config: &RenderConfig, text: String, markers: &[&Annotatio
         if marker.range.end.column > max {
             let end = {
                 let (start, middle) = split_on(old, marker.range.start.column.saturating_sub(max) as usize);
-                let (middle, end) = split_on(middle, (marker.range.end.column-marker.range.start.column+1) as usize);
+                let (middle, end) = split_on(middle, (marker.range.end.column - marker.range.start.column + 1) as usize);
                 write!(line, "{}", start)?;
                 colorize(&config.colors, &marker.color, &mut line)?;
                 stylize(&config.colors, &Style::Bright, &mut line)?;
@@ -145,7 +170,7 @@ pub fn color_text<'a>(config: &RenderConfig, text: String, markers: &[&Annotatio
                 write!(line, "{}", config.colors.reset)?;
                 end
             };
-            max = marker.range.end.column+1;
+            max = marker.range.end.column + 1;
             old = end.to_string();
         }
     }
@@ -154,8 +179,6 @@ pub fn color_text<'a>(config: &RenderConfig, text: String, markers: &[&Annotatio
 }
 
 pub fn render_code<'a>(config: &RenderConfig, code: &'a str, markers: &mut [Annotation], channel: &mut dyn Write) -> Result<(), fmt::Error> {
-    writeln!(channel)?;
-
     let code_lines = code.lines().collect::<Vec<&str>>();
     let (mut inline, multi_lines, lines) = group_markers(markers);
 
@@ -188,15 +211,7 @@ pub fn render_code<'a>(config: &RenderConfig, code: &'a str, markers: &mut [Anno
 
         let code = color_text(config, code_lines[line as usize].to_string(), inlined)?;
 
-        writeln!(
-            channel,
-            "{:>w$} {}{}{}",
-            line + 1,
-            config.chars.vbar,
-            multi,
-            code,
-            w = config.indent - 1
-        )?;
+        writeln!(channel, "{:>w$} {}{}{}", line + 1, config.chars.vbar, multi, code, w = config.indent - 1)?;
 
         write!(channel, "{}", config.colors.reset)?;
 
@@ -359,6 +374,13 @@ impl<'a> ErrorMessage<'a> {
         }
 
         let mut pos = self.desc.positions.clone();
+
+        writeln!(w)?;
+        colorize(&config.colors, &Color::Fft, w)?;
+        stylize(&config.colors, &Style::Dim, w)?;
+        writeln!(w, "{:>w$} {} {}:{}", "", config.chars.upright, self.desc.filename, self.desc.canon_pos, w = config.indent - 1)?;
+        write!(w, "{}", config.colors.reset)?;
+        writeln!(w, "{:>w$} {}", "", config.chars. vbar, w = config.indent - 1)?;
         render_code(config, self.code, &mut pos, w)?;
 
         // Hints

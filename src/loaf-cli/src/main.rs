@@ -72,35 +72,13 @@ fn main() {
                 },
             },
         ],
+        canon_pos: Range {
+            start: Position { line: 13, column: 16, index: 3 },
+            end: Position { line: 13, column: 18, index: 7 },
+        },
     };
 
-    let render_config = RenderConfig {
-        chars: Chars {
-            vbar: "│",
-            bullet: "•",
-            vbar_pont: "┆",
-            turnl: "└",
-            hbar: "─",
-            downright: "└",
-            upright: "┌",
-            sidedown: "┬",
-        },
-        colors: Colors {
-            fg_fst: "\x1b[31m",
-            fg_snd: "\x1b[34m",
-            fg_trd: "\x1b[32m",
-            fg_fth: "\x1b[33m",
-            fg_fft: "\x1b[36m",
-            bg_fst: "\x1b[41m",
-            bg_snd: "\x1b[44m",
-            bg_trd: "\x1b[42m",
-            bg_fth: "\x1b[43m",
-            bright: "\x1b[1m",
-            dim: "\x1b[2m",
-            reset: "\x1b[0m",
-        },
-        indent: 4,
-    };
+    let render_config = RenderConfig::ascii();
 
     let code = "let Void   : ★ = (x: ★) -> x in
 let elim-0 : (a: Void -> ★) -> (x: Void) -> a x = λmotive. λob. ob (motive ob) in

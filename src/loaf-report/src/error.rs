@@ -51,6 +51,7 @@ pub struct ErrorDescription {
     pub subtitles: Vec<(Color, Phrase)>,
     pub hints: Vec<Phrase>,
     pub positions: Vec<Annotation>,
+    pub canon_pos: Range,
 }
 
 pub struct ErrorMessage<'a> {
