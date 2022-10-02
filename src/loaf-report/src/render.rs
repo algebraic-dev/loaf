@@ -378,9 +378,17 @@ impl<'a> ErrorMessage<'a> {
         writeln!(w)?;
         colorize(&config.colors, &Color::Fft, w)?;
         stylize(&config.colors, &Style::Dim, w)?;
-        writeln!(w, "{:>w$} {} {}:{}", "", config.chars.upright, self.desc.filename, self.desc.canon_pos, w = config.indent - 1)?;
+        writeln!(
+            w,
+            "{:>w$} {} {}:{}",
+            "",
+            config.chars.upright,
+            self.desc.filename,
+            self.desc.canon_pos,
+            w = config.indent - 1
+        )?;
         write!(w, "{}", config.colors.reset)?;
-        writeln!(w, "{:>w$} {}", "", config.chars. vbar, w = config.indent - 1)?;
+        writeln!(w, "{:>w$} {}", "", config.chars.vbar, w = config.indent - 1)?;
         render_code(config, self.code, &mut pos, w)?;
 
         // Hints
