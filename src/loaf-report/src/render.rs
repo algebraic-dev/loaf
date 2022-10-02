@@ -100,7 +100,7 @@ pub fn group_markers<'a>(markers: &'a mut [Annotation]) -> (HashMap<u32, Vec<&'a
                 lines.push(marker.range.start.line);
                 lines.push(marker.range.end.line);
             } else {
-                for i in marker.range.start.line..marker.range.end.line {
+                for i in marker.range.start.line..=marker.range.end.line {
                     lines.push(i);
                 }
             }
@@ -111,9 +111,12 @@ pub fn group_markers<'a>(markers: &'a mut [Annotation]) -> (HashMap<u32, Vec<&'a
     lines.sort();
     lines.dedup();
 
+    println!("Lines {:?}", lines);
+
     (inline, multilines, lines)
 }
 
+#[derive(PartialEq, Eq)]
 pub enum Mode {
     Start,
     End,
@@ -209,7 +212,18 @@ pub fn render_code<'a>(config: &RenderConfig, code: &'a str, markers: &mut [Anno
 
         let multi = mode_to_str(config, &mode, &chosen)?;
 
-        let code = color_text(config, code_lines[line as usize].to_string(), inlined)?;
+        let mut code = color_text(config, code_lines[line as usize].to_string(), inlined)?;
+
+        if let Some(marker) = chosen {
+            if inlined.is_empty() {
+                let mut line = String::with_capacity(code.len());
+                colorize(&config.colors, &marker.color, &mut line)?;
+                stylize(&config.colors, &Style::Bright, &mut line)?;
+                write!(line, "{}", code)?;
+                write!(line, "{}", config.colors.reset)?;
+                code = line;
+            }
+        }
 
         writeln!(channel, "{:>w$} {}{}{}", line + 1, config.chars.vbar, multi, code, w = config.indent - 1)?;
 
@@ -235,7 +249,7 @@ pub fn render_code<'a>(config: &RenderConfig, code: &'a str, markers: &mut [Anno
                 let left = ann.range.start.column - size;
                 write_mult!(line, left, " ")?;
                 write!(line, "{}", config.chars.sidedown)?;
-                let mark = ann.range.end.column - ann.range.start.column;
+                let mark = (ann.range.end.column - ann.range.start.column).saturating_sub(1);
                 write_mult!(line, mark, config.chars.hbar)?;
                 write!(line, "{}", config.colors.reset)?;
                 size += left + 1 + mark;
@@ -378,15 +392,7 @@ impl<'a> ErrorMessage<'a> {
         writeln!(w)?;
         colorize(&config.colors, &Color::Fft, w)?;
         stylize(&config.colors, &Style::Dim, w)?;
-        writeln!(
-            w,
-            "{:>w$} {} {}:{}",
-            "",
-            config.chars.upright,
-            self.desc.filename,
-            self.desc.canon_pos,
-            w = config.indent - 1
-        )?;
+        writeln!(w, "{:>w$} {} {}:{}", "", config.chars.upright, self.filename, self.desc.canon_pos, w = config.indent - 1)?;
         write!(w, "{}", config.colors.reset)?;
         writeln!(w, "{:>w$} {}", "", config.chars.vbar, w = config.indent - 1)?;
         render_code(config, self.code, &mut pos, w)?;

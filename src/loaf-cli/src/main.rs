@@ -1,107 +1,40 @@
-use loaf_report::error::{Annotation, Color, ErrorDescription, Marked, Phrase, Severity, Style};
-use loaf_report::render::{Chars, Colors, RenderConfig};
-use loaf_span::{Position, Range};
+use core::fmt;
+use std::fs;
 
-fn main() {
-    let desc = ErrorDescription {
-        code: 1,
-        severity: Severity::Error,
-        filename: "./pudim.ume".to_string(),
-        title: Phrase {
-            style: Style::Bright,
-            words: vec![Marked::Normal("Type Mismatch".to_string())],
-        },
-        subtitles: vec![
-            (
-                Color::Fst,
-                Phrase {
-                    style: Style::Bright,
-                    words: vec![
-                        Marked::Normal("Expected:".to_string()),
-                        Marked::Colored(Color::Fst, Style::Normal, Box::new(Marked::Normal("Int".to_string()))),
-                    ],
-                },
-            ),
-            (
-                Color::Snd,
-                Phrase {
-                    style: Style::Bright,
-                    words: vec![
-                        Marked::Normal("     Got:".to_string()),
-                        Marked::Colored(Color::Snd, Style::Normal, Box::new(Marked::Normal("String".to_string()))),
-                    ],
-                },
-            ),
-        ],
-        hints: vec![Phrase {
-            style: Style::Normal,
-            words: vec![Marked::Normal("Awoooo apapraamrpamrap".to_string())],
-        }],
-        positions: vec![
-            Annotation {
-                color: Color::Fst,
-                phrase: Phrase {
-                    style: Style::Normal,
-                    words: vec![Marked::Normal("This part is wrong bro".to_string())],
-                },
-                range: Range {
-                    start: Position { line: 11, column: 12, index: 3 },
-                    end: Position { line: 15, column: 13, index: 7 },
-                },
-            },
-            Annotation {
-                color: Color::Snd,
-                phrase: Phrase {
-                    style: Style::Normal,
-                    words: vec![Marked::Normal("This entire thing is wrong".to_string())],
-                },
-                range: Range {
-                    start: Position { line: 13, column: 12, index: 3 },
-                    end: Position { line: 13, column: 13, index: 7 },
-                },
-            },
-            Annotation {
-                color: Color::Trd,
-                phrase: Phrase {
-                    style: Style::Normal,
-                    words: vec![Marked::Normal("Awo".to_string())],
-                },
-                range: Range {
-                    start: Position { line: 13, column: 16, index: 3 },
-                    end: Position { line: 13, column: 18, index: 7 },
-                },
-            },
-        ],
-        canon_pos: Range {
-            start: Position { line: 13, column: 16, index: 3 },
-            end: Position { line: 13, column: 18, index: 7 },
-        },
+use clap::{Parser as CParser, Subcommand};
+use loaf_driver::typecheck_expr;
+use loaf_report::render::RenderConfig;
+
+#[derive(CParser)]
+#[clap(author, version, about, long_about = None)]
+pub struct Cli {
+    #[clap(subcommand)]
+    pub command: Command,
+}
+
+#[derive(Subcommand)]
+pub enum Command {
+    #[clap(aliases = &["c"])]
+    Compile { file: String },
+}
+
+fn main() -> Result<(), fmt::Error> {
+    let cli = Cli::parse();
+    match cli.command {
+        Command::Compile { file } => {
+            let contents = fs::read_to_string(file.clone()).expect("Should have been able to read the file");
+            let result = typecheck_expr(&contents);
+            match result {
+                Ok(_) => println!("Ok!"),
+                Err(err) => {
+                    let message = err.to_message(&file, &contents);
+                    let config = RenderConfig::ascii();
+                    let mut str = String::new();
+                    message.render(&config, &mut str)?;
+                    println!("{}", str);
+                }
+            }
+        }
     };
-
-    let render_config = RenderConfig::ascii();
-
-    let code = "let Void   : ★ = (x: ★) -> x in
-let elim-0 : (a: Void -> ★) -> (x: Void) -> a x = λmotive. λob. ob (motive ob) in
-let absurd : (a: ★) -> (x: Void) -> a = λt. λvoid. elim-0 (λx. t) void in
-
-let Nat : ★ = (nat: ★) -> (s: nat -> nat) -> (z: nat) -> nat in
-let z   : Nat = λnat. λs. λz. z in
-let s   : Nat -> Nat = λn. λnat. λs. λz. s (n nat s z) in
-
-let Unit : ★  = (x: ★) -> x -> x in
-let unit : Unit = λx. λu. u in
-let elim-1 : 
-    (a: Unit -> ★) -> (x: a unit) -> 
-    (y: Unit) -> a y = λmotive.
-        λx. λy. π-2 
-        (y (Σ xe : Unit . motive xe) 
-        (⟨unit, x⟩)) in
-★
-Footer";
-
-    let mut buf = String::new();
-
-    desc.to_message(code).render(&render_config, &mut buf).expect("Cannot write");
-
-    println!("{}", buf);
+    Ok(())
 }

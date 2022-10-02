@@ -1,7 +1,7 @@
 use core::fmt;
 use std::rc::Rc;
 
-use crate::types::Index;
+use crate::{types::Index, value::Env};
 use loaf_span::Span;
 
 #[derive(Debug)]
@@ -64,7 +64,6 @@ pub struct Right {
     pub term: Rc<Term>,
 }
 
-
 #[derive(Debug)]
 pub struct Let {
     pub range: Span,
@@ -90,22 +89,22 @@ pub enum Term {
     Right(Right),
 }
 
-type Env = im::Vector<Option<String>>;
+type NameEnv = im::Vector<Option<String>>;
 
-pub fn add_to_env(env: &Env, name: Option<String>) -> Env {
+pub fn add_to_env(env: &NameEnv, name: Option<String>) -> NameEnv {
     let mut env = env.clone();
     env.push_front(name);
     env
 }
 
 impl Universe {
-    pub fn fmt_term(&self, _: &Env, f: &mut fmt::Formatter) -> fmt::Result {
+    pub fn fmt_term(&self, _: &NameEnv, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "★")
     }
 }
 
 impl Lambda {
-    pub fn fmt_term(&self, ctx: &Env, f: &mut fmt::Formatter) -> fmt::Result {
+    pub fn fmt_term(&self, ctx: &NameEnv, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "(λ {}. ", self.binder)?;
         self.body.fmt_term(&add_to_env(ctx, Some(self.binder.clone())), f)?;
         write!(f, ")")
@@ -113,7 +112,7 @@ impl Lambda {
 }
 
 impl Pi {
-    pub fn fmt_term(&self, ctx: &Env, f: &mut fmt::Formatter) -> fmt::Result {
+    pub fn fmt_term(&self, ctx: &NameEnv, f: &mut fmt::Formatter) -> fmt::Result {
         match &self.binder {
             Some(binder) => {
                 write!(f, "(Π {} : ", binder)?;
@@ -134,7 +133,7 @@ impl Pi {
 }
 
 impl Sigma {
-    pub fn fmt_term(&self, ctx: &Env, f: &mut fmt::Formatter) -> fmt::Result {
+    pub fn fmt_term(&self, ctx: &NameEnv, f: &mut fmt::Formatter) -> fmt::Result {
         match &self.binder {
             Some(binder) => {
                 write!(f, "(Σ {} : ", binder)?;
@@ -155,7 +154,7 @@ impl Sigma {
 }
 
 impl Pair {
-    pub fn fmt_term(&self, ctx: &Env, f: &mut fmt::Formatter) -> fmt::Result {
+    pub fn fmt_term(&self, ctx: &NameEnv, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "(")?;
         self.fst.fmt_term(ctx, f)?;
         write!(f, ", ")?;
@@ -165,7 +164,7 @@ impl Pair {
 }
 
 impl Left {
-    pub fn fmt_term(&self, ctx: &Env, f: &mut fmt::Formatter) -> fmt::Result {
+    pub fn fmt_term(&self, ctx: &NameEnv, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "(π1 ")?;
         self.term.fmt_term(ctx, f)?;
         write!(f, ")")
@@ -173,7 +172,7 @@ impl Left {
 }
 
 impl Right {
-    pub fn fmt_term(&self, ctx: &Env, f: &mut fmt::Formatter) -> fmt::Result {
+    pub fn fmt_term(&self, ctx: &NameEnv, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "(π2 ")?;
         self.term.fmt_term(ctx, f)?;
         write!(f, ")")
@@ -181,7 +180,7 @@ impl Right {
 }
 
 impl App {
-    pub fn fmt_term(&self, ctx: &Env, f: &mut fmt::Formatter) -> fmt::Result {
+    pub fn fmt_term(&self, ctx: &NameEnv, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "(")?;
         self.head.fmt_term(ctx, f)?;
         for arg in &self.spine {
@@ -192,7 +191,7 @@ impl App {
 }
 
 impl Var {
-    pub fn fmt_term(&self, ctx: &Env, f: &mut fmt::Formatter) -> fmt::Result {
+    pub fn fmt_term(&self, ctx: &NameEnv, f: &mut fmt::Formatter) -> fmt::Result {
         match ctx.get(self.index.0) {
             Some(Some(x)) => write!(f, "{}", x),
             Some(None) => write!(f, "_"),
@@ -202,7 +201,7 @@ impl Var {
 }
 
 impl Let {
-    pub fn fmt_term(&self, ctx: &Env, f: &mut fmt::Formatter) -> fmt::Result {
+    pub fn fmt_term(&self, ctx: &NameEnv, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "(let {} : ", self.binder)?;
         self.ty.fmt_term(ctx, f)?;
         write!(f, " = ")?;
@@ -214,7 +213,7 @@ impl Let {
 }
 
 impl Term {
-    pub fn fmt_term(&self, ctx: &Env, f: &mut fmt::Formatter) -> fmt::Result {
+    pub fn fmt_term(&self, ctx: &NameEnv, f: &mut fmt::Formatter) -> fmt::Result {
         use Term::*;
         match self {
             Let(x) => x.fmt_term(ctx, f),
@@ -234,5 +233,36 @@ impl Term {
 impl fmt::Display for Term {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.fmt_term(&im::Vector::new(), f)
+    }
+}
+
+pub struct PairCtxTerm<'a>(Env, &'a Term);
+
+impl Term {
+    pub fn with_ctx(&self, ctx: &Env) -> PairCtxTerm {
+        PairCtxTerm(ctx.clone(), self.clone())
+    }
+}
+
+impl<'a> fmt::Display for PairCtxTerm<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.1.fmt_term(&self.0.names, f)
+    }
+}
+
+impl Term {
+    pub fn locate(&self) -> loaf_span::Span {
+        match self {
+            Term::Let(x) => x.range.clone(),
+            Term::Universe(x) => x.range.clone(),
+            Term::Lambda(x) => x.range.clone(),
+            Term::Pi(x) => x.range.clone(),
+            Term::Sigma(x) => x.range.clone(),
+            Term::Pair(x) => x.range.clone(),
+            Term::Left(x) => x.range.clone(),
+            Term::Right(x) => x.range.clone(),
+            Term::Var(x) => x.range.clone(),
+            Term::App(x) => x.range.clone(),
+        }
     }
 }

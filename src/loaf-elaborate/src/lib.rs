@@ -19,13 +19,17 @@ pub fn check(ctx: &mut Context, ast: &Expr, typ: Rc<Value>) -> Result<Rc<Term>, 
             ctx.with_pos(lambda.range.clone());
             let var = Value::var(ctx.env.depth);
             let pi_body = body.apply(name.clone(), Rc::new(var));
-            let mut ctx = ctx.with_val(Some(lambda.binder.name.clone()), typ.clone());
+            let mut ctx = ctx.with_ty(Some(lambda.binder.name.clone()), typ.clone());
             let body = check(&mut ctx, &lambda.body, pi_body)?;
             Ok(Rc::new(Term::Lambda(Lambda {
                 range: Span::Localized(lambda.range.clone()),
                 binder: lambda.binder.name.clone(),
                 body,
             })))
+        }
+        (Expr::Hlp(hlp), _) => {
+            ctx.with_pos(hlp.range.clone());
+            Err(ElaborationError::Inspection(ctx.clone(), typ.quote(ctx.env.depth)))
         }
         (ast, _) => {
             ctx.with_pos(ast.locate());
@@ -73,7 +77,8 @@ pub fn infer(ctx: &mut Context, ast: &Expr) -> Result<(Rc<Term>, Rc<Value>), Ela
             }?;
             // Probably we need to do it lazyly in the future?
             let val_eval = val_res.eval(&ctx.env);
-            let mut ctx = ctx.define(letd.binder.name.clone(), val_eval, typ_eval);
+
+            let mut ctx = ctx.define(letd.binder.name.clone(), typ_eval, val_eval);
             let (then_res, then_ty) = infer(&mut ctx, &letd.body)?;
             Ok((
                 Rc::new(Term::Let(Let {
@@ -90,7 +95,7 @@ pub fn infer(ctx: &mut Context, ast: &Expr) -> Result<(Rc<Term>, Rc<Value>), Ela
             ctx.with_pos(pi.range.clone());
             let typ_res = check(ctx, &pi.typ, Rc::new(Value::Universe))?;
             let ident = pi.binder.clone().map(|x| x.name);
-            let body_res = check(&mut ctx.with_val(ident.clone(), typ_res.eval(&ctx.env)), &pi.body, Rc::new(Value::Universe))?;
+            let body_res = check(&mut ctx.with_ty(ident.clone(), typ_res.eval(&ctx.env)), &pi.body, Rc::new(Value::Universe))?;
             Ok((
                 Rc::new(Term::Pi(Pi {
                     range: Span::Localized(pi.range.clone()),
@@ -129,7 +134,7 @@ pub fn infer(ctx: &mut Context, ast: &Expr) -> Result<(Rc<Term>, Rc<Value>), Ela
             ctx.with_pos(sigma.range.clone());
             let typ_res = check(ctx, &sigma.typ, Rc::new(Value::Universe))?;
             let body_res = check(
-                &mut ctx.with_val(sigma.binder.clone().map(|x| x.name), typ_res.eval(&ctx.env)),
+                &mut ctx.with_ty(sigma.binder.clone().map(|x| x.name), typ_res.eval(&ctx.env)),
                 &sigma.body,
                 Rc::new(Value::Universe),
             )?;

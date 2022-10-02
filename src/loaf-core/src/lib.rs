@@ -64,7 +64,7 @@ impl Value {
                 range: Span::Generated,
                 term: expr.quote(depth),
             })),
-            Value::Universe => todo!(),
+            Value::Universe => Rc::new(Term::Universe(Universe { range: Span::Generated })),
         }
     }
 }
@@ -93,7 +93,7 @@ impl Term {
             Term::Let(term) => {
                 let val = term.val.eval(env);
                 term.then.eval(&env.add(Some(term.binder.clone()), val))
-            },
+            }
             Term::Universe(_) => Rc::new(Value::Universe),
             Term::Var(term) => env.vars.get(term.index.0).expect("Internal Error: Malformed Term").clone(),
             Term::Pi(term) => Rc::new(Value::Pi(term.binder.clone(), term.typ.eval(env), Closure::new(env, &term.body))),

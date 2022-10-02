@@ -32,10 +32,17 @@ impl Position {
         Position::new(0, 0, 0)
     }
 
+    pub fn until_next(&self) -> Range {
+        Range {
+            start: self.clone(),
+            end: self.clone().next(' '),
+        }
+    }
+
     pub fn next(&self, chr: char) -> Position {
         match chr {
             '\n' => Position {
-                column: 1,
+                column: 0,
                 line: self.line + 1,
                 index: self.index + 1,
             },

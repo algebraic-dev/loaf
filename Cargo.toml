@@ -3,4 +3,9 @@ members = [
   "src/loaf-cli",
   "src/loaf-report",
   "src/loaf-span",
+  "src/loaf-parser",
+  "src/loaf-tree",
+  "src/loaf-core",
+  "src/loaf-elaborate",
+  "src/loaf-driver",
 ]

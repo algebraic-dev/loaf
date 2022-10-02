@@ -27,6 +27,12 @@ impl<'cache> Parser<'cache> {
             Token::Star => Ok(Expr::Typ(Typ {
                 range: eat_single!(self, Token::Star)?.1,
             })),
+            Token::LPar => {
+                self.eat(match_single!(Token::LPar))?;
+                let res = self.parse_expr()?;
+                self.eat(match_single!(Token::RPar))?;
+                Ok(res)
+            }
             _ => self.fail(),
         }
     }
