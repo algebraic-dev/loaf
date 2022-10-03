@@ -33,7 +33,7 @@ impl Context {
         let mut ctx = if let Some(name) = name.clone() {
             let mut ctx = self.clone();
             ctx.types = ctx.types.clone();
-            ctx.types.insert(name.clone(), (typ, ctx.env.depth));
+            ctx.types.insert(name, (typ, ctx.env.depth));
             ctx
         } else {
             self.clone()

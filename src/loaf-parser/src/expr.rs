@@ -68,6 +68,7 @@ impl<'cache> Parser<'cache> {
             binder: Some(Ident::new(name, id_range)),
             typ: Box::new(typ),
             body: Box::new(body),
+            implicit: false
         }))
     }
 
@@ -80,6 +81,15 @@ impl<'cache> Parser<'cache> {
                 binder: None,
                 typ: Box::new(head),
                 body: Box::new(body),
+                implicit: false
+            }))
+        } else if let Token::Colon = self.get() {
+            eat_single!(self, Token::Colon)?;
+            let body = self.parse_expr()?;
+            Ok(Expr::Ann(Ann {
+                range: start.mix(body.locate()),
+                expr: Box::new(head),
+                typ: Box::new(body)
             }))
         } else {
             Ok(head)
@@ -183,6 +193,7 @@ impl<'cache> Parser<'cache> {
             binder: Some(binder),
             typ: Box::new(typ),
             body: Box::new(body),
+            implicit: false
         }))
     }
 

@@ -1,4 +1,4 @@
 let Void   : ★ = (x: ★) -> x in
 let elim-0 : (a: Void -> ★) -> (x: Void) -> a x = λmotive. λob. ob (motive ob) in
 let absurd : (a: ★) -> (x: Void) -> a = λt. λvoid. elim-0 (λx. t) void in
-Void
+absurd : ★

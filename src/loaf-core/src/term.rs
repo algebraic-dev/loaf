@@ -115,9 +115,9 @@ impl Pi {
     pub fn fmt_term(&self, ctx: &NameEnv, f: &mut fmt::Formatter) -> fmt::Result {
         match &self.binder {
             Some(binder) => {
-                write!(f, "(Π {} : ", binder)?;
+                write!(f, "({} : ", binder)?;
                 self.typ.fmt_term(ctx, f)?;
-                write!(f, " . ")?;
+                write!(f, ") -> ")?;
                 self.body.fmt_term(&add_to_env(ctx, Some(binder.clone())), f)?;
                 write!(f, ")")
             }
@@ -240,7 +240,7 @@ pub struct PairCtxTerm<'a>(Env, &'a Term);
 
 impl Term {
     pub fn with_ctx(&self, ctx: &Env) -> PairCtxTerm {
-        PairCtxTerm(ctx.clone(), self.clone())
+        PairCtxTerm(ctx.clone(), self)
     }
 }
 

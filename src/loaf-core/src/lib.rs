@@ -20,7 +20,7 @@ impl Stuck {
         match self {
             Stuck::Rigid(cur_depth) => Rc::new(Term::Var(Var {
                 range: Span::Generated,
-                index: Level::to_index(base, cur_depth.clone()),
+                index: Level::to_index(base, *cur_depth),
             })),
         }
     }

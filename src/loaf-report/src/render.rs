@@ -111,8 +111,6 @@ pub fn group_markers<'a>(markers: &'a mut [Annotation]) -> (HashMap<u32, Vec<&'a
     lines.sort();
     lines.dedup();
 
-    println!("Lines {:?}", lines);
-
     (inline, multilines, lines)
 }
 

@@ -87,7 +87,7 @@ pub fn elaboration_err_to_desc(err: &ElaborationError) -> ErrorDescription {
                 Color::Snd,
                 Phrase {
                     style: Style::Bright,
-                    words: vec![Normal("Expected:".to_string()), Colored(Color::Snd, Style::Bright, Box::new(Normal(got_str)))],
+                    words: vec![Normal("     Got:".to_string()), Colored(Color::Snd, Style::Bright, Box::new(Normal(got_str)))],
                 },
             );
 
