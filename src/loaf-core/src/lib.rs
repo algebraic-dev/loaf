@@ -9,6 +9,21 @@ pub mod term;
 pub mod types;
 pub mod value;
 
+pub fn eval_app(head: Rc<Value>, spine: &Vec<Rc<Value>>) -> Rc<Value> {
+    let mut head = head;
+    for arg in spine {
+        head = match &*head {
+            Value::Neutral(stuck, sp) => Rc::new(Value::Neutral(
+                stuck.clone(),
+                [sp.as_slice(), spine].concat(),
+            )),
+            Value::Lam(name, closure) => closure.apply(Some(name.clone()), arg.clone()),
+            _ => unreachable!("Internal Error: Malformed application"),
+        }
+    }
+    head
+}
+
 impl Closure {
     pub fn apply(&self, name: Option<String>, arg: Rc<Value>) -> Rc<Value> {
         self.term.eval(&self.env.add(name, arg))
@@ -22,6 +37,11 @@ impl Stuck {
                 range: Span::Generated,
                 index: Level::to_index(base, *cur_depth),
             })),
+            Stuck::Top(name, cur_depth) => Rc::new(Term::Top(Top {
+                range: Span::Generated,
+                level: *cur_depth,
+                name: name.clone()
+            }))
         }
     }
 }
@@ -71,19 +91,9 @@ impl Value {
 
 impl App {
     pub fn eval(&self, env: &Env) -> Rc<Value> {
-        let mut head = self.head.eval(env);
-        for arg in &self.spine {
-            let arg = arg.eval(env);
-            head = match &*head {
-                Value::Neutral(stuck, sp) => Rc::new(Value::Neutral(
-                    stuck.clone(),
-                    [sp.as_slice(), &self.spine.iter().map(|x| x.eval(env)).collect::<Vec<Rc<Value>>>()].concat(),
-                )),
-                Value::Lam(name, closure) => closure.apply(Some(name.clone()), arg),
-                _ => unreachable!("Internal Error: Malformed application"),
-            }
-        }
-        head
+        let head = self.head.eval(env);
+        let spine = self.spine.iter().map(|a| a.eval(env)).collect();
+        eval_app(head, &spine)
     }
 }
 
@@ -94,6 +104,7 @@ impl Term {
                 let val = term.val.eval(env);
                 term.then.eval(&env.add(Some(term.binder.clone()), val))
             }
+            Term::Top(top) => Rc::new(Value::Neutral(Stuck::Top(top.name.clone(), top.level), vec![])),
             Term::Universe(_) => Rc::new(Value::Universe),
             Term::Var(term) => env.vars.get(term.index.0).expect("Internal Error: Malformed Term").clone(),
             Term::Pi(term) => Rc::new(Value::Pi(term.binder.clone(), term.typ.eval(env), Closure::new(env, &term.body))),

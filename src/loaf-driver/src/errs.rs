@@ -1,7 +1,6 @@
 use loaf_elaborate::errors::{BinderKind, ElaborationError};
 use loaf_parser::errors::SyntaxError;
 use loaf_report::error::{Annotation, Color, ErrorDescription, Marked::*, Phrase, Severity, Style};
-use loaf_span::Span;
 
 pub fn syntax_err_to_description(err: &SyntaxError) -> ErrorDescription {
     use SyntaxError::*;
@@ -56,6 +55,17 @@ pub fn elaboration_err_to_desc(err: &ElaborationError) -> ErrorDescription {
                 },
             );
 
+            for (name, (entry, _)) in &ctx.top_level_ty {
+                let got_str = format!("{}", entry.quote(ctx.env.depth).with_ctx(&ctx.env));
+                err.add_subtitle(
+                    Color::Snd,
+                    Phrase {
+                        style: Style::Bright,
+                        words: vec![Normal(format!("{:<8}:", name)), Colored(Color::Snd, Style::Bright, Box::new(Normal(got_str)))],
+                    },
+                );
+            }
+
             for (name, (entry, _)) in &ctx.types {
                 let got_str = format!("{}", entry.quote(ctx.env.depth).with_ctx(&ctx.env));
                 err.add_subtitle(
@@ -97,7 +107,7 @@ pub fn elaboration_err_to_desc(err: &ElaborationError) -> ErrorDescription {
 
             err
         }
-        ElaborationError::ExpectedType(ctx, kind, got) => {
+        ElaborationError::ExpectedType(ctx, kind, _, got) => {
             let mut err = ErrorDescription::new(1, ctx.pos.clone());
             let got_str = format!("{}", got.with_ctx(&ctx.env));
 
@@ -105,19 +115,16 @@ pub fn elaboration_err_to_desc(err: &ElaborationError) -> ErrorDescription {
                 Color::Fst,
                 Phrase {
                     style: Style::Bright,
-                    words: vec![Normal("Got ".to_string()), Colored(Color::Fst, Style::Bright, Box::new(Normal(got_str)))],
+                    words: vec![Normal("Got the type".to_string()), Colored(Color::Fst, Style::Bright, Box::new(Normal(got_str.clone())))],
                 },
             );
-
-            match got.locate() {
-                Span::Localized(range) => err.add_pos(Annotation::bright(Color::Fst, "Here!", range)),
-                Span::Generated => (),
-            }
 
             let kind = match kind {
                 BinderKind::PiType => "a function".to_string(),
                 BinderKind::SigmaType => "a tuple".to_string(),
             };
+
+            err.add_pos(Annotation::bright(Color::Fst, &format!("It's not {}!", kind), ctx.pos.clone()));
 
             err.set_title(Phrase {
                 style: Style::Bright,

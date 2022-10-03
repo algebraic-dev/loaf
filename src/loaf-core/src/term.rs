@@ -1,13 +1,20 @@
 use core::fmt;
 use std::rc::Rc;
 
-use crate::{types::Index, value::Env};
+use crate::{types::{Index, Level}, value::Env};
 use loaf_span::Span;
 
 #[derive(Debug)]
 pub struct Var {
     pub range: Span,
     pub index: Index,
+}
+
+#[derive(Debug)]
+pub struct Top {
+    pub range: Span,
+    pub name: String,
+    pub level: Level,
 }
 
 #[derive(Debug)]
@@ -76,6 +83,8 @@ pub struct Let {
 #[derive(Debug)]
 pub enum Term {
     Var(Var),
+    Top(Top),
+
     Universe(Universe),
     Let(Let),
 
@@ -115,11 +124,11 @@ impl Pi {
     pub fn fmt_term(&self, ctx: &NameEnv, f: &mut fmt::Formatter) -> fmt::Result {
         match &self.binder {
             Some(binder) => {
-                write!(f, "({} : ", binder)?;
+                write!(f, "(({} : ", binder)?;
                 self.typ.fmt_term(ctx, f)?;
                 write!(f, ") -> ")?;
                 self.body.fmt_term(&add_to_env(ctx, Some(binder.clone())), f)?;
-                write!(f, ")")
+                write!(f, "))")
             }
             None => {
                 write!(f, "(")?;
@@ -181,12 +190,16 @@ impl Right {
 
 impl App {
     pub fn fmt_term(&self, ctx: &NameEnv, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "(")?;
-        self.head.fmt_term(ctx, f)?;
-        for arg in &self.spine {
-            arg.fmt_term(ctx, f)?;
+        if self.spine.is_empty() {
+            self.head.fmt_term(ctx, f)
+        } else {
+            write!(f, "(")?;
+            self.head.fmt_term(ctx, f)?;
+            for arg in &self.spine {
+                arg.fmt_term(ctx, f)?;
+            }
+            write!(f, ")")
         }
-        write!(f, ")")
     }
 }
 
@@ -197,6 +210,12 @@ impl Var {
             Some(None) => write!(f, "_"),
             None => write!(f, "<{}>", self.index.0),
         }
+    }
+}
+
+impl Top {
+    pub fn fmt_term(&self, _: &NameEnv, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.name)
     }
 }
 
@@ -216,6 +235,7 @@ impl Term {
     pub fn fmt_term(&self, ctx: &NameEnv, f: &mut fmt::Formatter) -> fmt::Result {
         use Term::*;
         match self {
+            Top(x) => x.fmt_term(ctx, f),
             Let(x) => x.fmt_term(ctx, f),
             Universe(x) => x.fmt_term(ctx, f),
             Lambda(x) => x.fmt_term(ctx, f),
@@ -261,6 +281,7 @@ impl Term {
             Term::Pair(x) => x.range.clone(),
             Term::Left(x) => x.range.clone(),
             Term::Right(x) => x.range.clone(),
+            Term::Top(x) => x.range.clone(),
             Term::Var(x) => x.range.clone(),
             Term::App(x) => x.range.clone(),
         }

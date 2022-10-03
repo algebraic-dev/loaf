@@ -41,6 +41,7 @@ pub enum Value {
 #[derive(Debug, Clone)]
 pub enum Stuck {
     Rigid(Level),
+    Top(String, Level)
 }
 
 #[derive(Debug, Clone)]
