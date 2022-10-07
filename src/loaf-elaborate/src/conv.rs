@@ -3,11 +3,12 @@ use std::rc::Rc;
 use loaf_core::types::Level;
 use loaf_core::value::{Closure, Stuck, Value};
 
-use crate::context::{Context, force};
+use crate::context::{force, Context};
+use crate::eval::apply;
 use Value::*;
 
 fn apply_to(closure: &Closure, name: Option<String>, lvl: Level) -> Rc<Value> {
-    closure.apply(name, Rc::new(Value::var(lvl)))
+    apply(closure, name, Rc::new(Value::var(lvl)))
 }
 
 fn conv_spine(ctx: &Context, lvl: Level, left: &[Rc<Value>], right: &[Rc<Value>]) -> bool {

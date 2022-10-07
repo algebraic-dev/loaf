@@ -25,10 +25,16 @@ pub struct Constructor {
 }
 
 #[derive(Debug)]
+pub enum DeclRes {
+    Pattern(Vec<Equation>),
+    Value(Box<Expr>),
+}
+
+#[derive(Debug)]
 pub struct Decl {
     pub name: Ident,
     pub typ: Box<Expr>,
-    pub value: Box<Expr>,
+    pub value: DeclRes,
 }
 
 #[derive(Debug)]
@@ -84,6 +90,20 @@ impl fmt::Display for TypeDecl {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let res = self.constructors.iter().map(|x| format!("{}", x)).collect::<Vec<String>>().join(" ");
         write!(f, "(type {} : {} {})", self.name, self.typ, res)
+    }
+}
+
+impl fmt::Display for DeclRes {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            DeclRes::Value(res) => write!(f, "{}", res),
+            DeclRes::Pattern(pats) => {
+                for pat in pats {
+                    write!(f, "{}", pat)?;
+                }
+                Ok(())
+            }
+        }
     }
 }
 

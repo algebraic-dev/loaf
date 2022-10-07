@@ -1,31 +1,38 @@
-use std::rc::Rc;
+use std::{collections::HashMap, rc::Rc};
 
 use loaf_core::{
     types::Level,
-    value::{Env, Value, Stuck}, term::Term, eval_app,
+    value::{Env, Stuck, Value},
 };
 use loaf_span::{Position, Range};
 
-#[derive(Clone, Debug)]
+use crate::{
+    decls::FunDecl,
+    eval::eval_apply,
+};
+
+#[derive(Debug, Clone)]
+pub enum DeclKind {
+    FunDecl(FunDecl),
+    TypeDecl
+}
+
+#[derive(Debug, Clone)]
 pub struct Context {
     pub env: Env,
-    pub top_level_count: Level,
-    pub top_level: im::vector::Vector<Rc<Term>>,
-    pub top_level_ty: im::hashmap::HashMap<String, (Rc<Value>, Level)>,
-    pub types: im::hashmap::HashMap<String, (Rc<Value>, Level)>,
+    pub types: Vec<(String, (Rc<Value>, Level))>,
+    pub decls: HashMap<String, Level>,
+    pub funs_val: Vec<(Rc<Value>, DeclKind)>,
     pub pos: Range,
 }
 
 pub fn force(ctx: &Context, val: Rc<Value>) -> Rc<Value> {
     match &*val {
-        Value::Neutral(Stuck::Top(_, idx), args) => {
-            if let Some(term) = ctx.top_level.get(idx.0) {
-                eval_app(term.eval(&ctx.env), args)
-            } else {
-                panic!("Internal Error: Cannot reduce lol")
-            }
-        }
-        _ => val
+        Value::Neutral(Stuck::Fun(_, idx), args) => match &ctx.funs_val[idx.0].1 {
+            DeclKind::FunDecl(FunDecl::Value(val)) => eval_apply(val.clone(), args),
+            _ => todo!(),
+        },
+        _ => val,
     }
 }
 
@@ -37,10 +44,9 @@ impl Context {
                 names: im::Vector::new(),
                 depth: Level(0),
             },
-            top_level: im::Vector::new(),
-            top_level_ty: im::HashMap::new(),
-            top_level_count: Level(0),
-            types: im::HashMap::new(),
+            decls: HashMap::new(),
+            funs_val: Vec::new(),
+            types: Vec::new(),
             pos: Range::new(Position::new(0, 0, 0), Position::new(0, 0, 0)),
         }
     }
@@ -52,7 +58,7 @@ impl Context {
         let mut ctx = if let Some(name) = name.clone() {
             let mut ctx = self.clone();
             ctx.types = ctx.types.clone();
-            ctx.types.insert(name, (typ, ctx.env.depth));
+            ctx.types.push((name, (typ, ctx.env.depth)));
             ctx
         } else {
             self.clone()
@@ -66,20 +72,10 @@ impl Context {
     pub fn define(&self, name: String, ty: Rc<Value>, term: Rc<Value>) -> Context {
         let mut ctx = self.clone();
         ctx.types = ctx.types.clone();
-        ctx.types.insert(name.clone(), (ty, ctx.env.depth));
+        ctx.types.push((name.clone(), (ty, ctx.env.depth)));
         ctx.env.vars.push_front(term);
         ctx.env.names.push_front(Some(name));
         ctx.env.depth = ctx.env.depth.inc();
         ctx
     }
-
-    pub fn with_toplevel_ty(&mut self, name: String, ty: Rc<Value>) {
-        self.top_level_ty.insert(name, (ty, self.top_level_count));
-        self.top_level_count = self.top_level_count.inc();
-    }
-    
-    pub fn with_toplevel_val(&mut self, val: Rc<Term>) {
-        self.top_level.push_back(val);
-    }
-
 }

@@ -1,4 +1,7 @@
-use loaf_elaborate::errors::{BinderKind, ElaborationError};
+use loaf_elaborate::{
+    errors::{BinderKind, ElaborationError},
+    eval::quote,
+};
 use loaf_parser::errors::SyntaxError;
 use loaf_report::error::{Annotation, Color, ErrorDescription, Marked::*, Phrase, Severity, Style};
 
@@ -28,6 +31,18 @@ pub fn syntax_err_to_description(err: &SyntaxError) -> ErrorDescription {
 
 pub fn elaboration_err_to_desc(err: &ElaborationError) -> ErrorDescription {
     match err {
+        ElaborationError::NotATypeConstructor(range) => {
+            let mut err = ErrorDescription::new(1, range.clone());
+            err.set_title(Phrase::new(Style::Bright, vec![Normal("Not a type constructor".to_string())]));
+            err.add_pos(Annotation::bright(Color::Fst, "Here!", range.clone()));
+            err
+        }
+        ElaborationError::NotADataConstructor(range, name) => {
+            let mut err = ErrorDescription::new(1, range.clone());
+            err.set_title(Phrase::new(Style::Bright, vec![Normal("Not a data constructor of".to_string()), Quoted(name.to_string())]));
+            err.add_pos(Annotation::bright(Color::Fst, "Here!", range.clone()));
+            err
+        }
         ElaborationError::CannotFindVariable(range, name) => {
             let mut err = ErrorDescription::new(1, range.clone());
             err.set_title(Phrase::new(Style::Bright, vec![Normal("Cannot find variable".to_string()), Quoted(name.to_string())]));
@@ -55,19 +70,8 @@ pub fn elaboration_err_to_desc(err: &ElaborationError) -> ErrorDescription {
                 },
             );
 
-            for (name, (entry, _)) in &ctx.top_level_ty {
-                let got_str = format!("{}", entry.quote(ctx.env.depth).with_ctx(&ctx.env));
-                err.add_subtitle(
-                    Color::Snd,
-                    Phrase {
-                        style: Style::Bright,
-                        words: vec![Normal(format!("{:<8}:", name)), Colored(Color::Snd, Style::Bright, Box::new(Normal(got_str)))],
-                    },
-                );
-            }
-
             for (name, (entry, _)) in &ctx.types {
-                let got_str = format!("{}", entry.quote(ctx.env.depth).with_ctx(&ctx.env));
+                let got_str = format!("{}", quote(entry, ctx.env.depth).with_ctx(&ctx.env));
                 err.add_subtitle(
                     Color::Snd,
                     Phrase {

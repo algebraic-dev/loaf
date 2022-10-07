@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use loaf_core::term::Term;
-use loaf_span::Range;
+use loaf_span::{Range, Span};
 
 use crate::context::Context;
 
@@ -18,4 +18,6 @@ pub enum ElaborationError {
     Mismatch(Context, Rc<Term>, Rc<Term>),
     CantInfer(Range),
     Inspection(Context, Rc<Term>),
+    NotATypeConstructor(Range),
+    NotADataConstructor(Range, String),
 }

@@ -68,6 +68,15 @@ impl Range {
     }
 }
 
+impl Span {
+    pub fn to_range(&self) -> Option<Range> {
+        match self {
+            Span::Localized(x) => Some(x.clone()),
+            Span::Generated => None
+        }
+    }
+}
+
 impl fmt::Display for Position {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}:{}", self.line, self.column)

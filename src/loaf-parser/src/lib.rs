@@ -9,7 +9,7 @@ pub mod macros;
 use errors::SyntaxError;
 pub use expr::*;
 use lexer::tokens::Token;
-use loaf_tree::{Constructor, Decl, Equation, Pat, TopLevel, TypeDecl};
+use loaf_tree::{Constructor, Decl, DeclRes, Equation, Pat, TopLevel, TypeDecl};
 pub use state::*;
 
 impl<'cache> Parser<'cache> {
@@ -75,8 +75,24 @@ impl<'cache> Parser<'cache> {
         self.eat(match_single!(Token::Colon))?;
         let typ = Box::new(self.parse_expr()?);
         self.eat(match_single!(Token::Eq))?;
-        let res = self.parse_expr()?;
-        Ok(Decl { name, typ, value: Box::new(res) })
+        if *self.get() == Token::Pipe {
+            let mut rules = Vec::new();
+            while *self.get() == Token::Pipe {
+                rules.push(self.parse_equation()?);
+            }
+            Ok(Decl {
+                name,
+                typ,
+                value: DeclRes::Pattern(rules),
+            })
+        } else {
+            let res = self.parse_expr()?;
+            Ok(Decl {
+                name,
+                typ,
+                value: DeclRes::Value(Box::new(res)),
+            })
+        }
     }
 
     pub fn parse_program(&mut self) -> Result<Vec<TopLevel>, SyntaxError> {

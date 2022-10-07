@@ -1,20 +1,16 @@
 use core::fmt;
 use std::rc::Rc;
 
-use crate::{types::{Index, Level}, value::Env};
+use crate::{
+    types::{Index, Level},
+    value::Env,
+};
 use loaf_span::Span;
 
 #[derive(Debug)]
 pub struct Var {
     pub range: Span,
     pub index: Index,
-}
-
-#[derive(Debug)]
-pub struct Top {
-    pub range: Span,
-    pub name: String,
-    pub level: Level,
 }
 
 #[derive(Debug)]
@@ -81,9 +77,18 @@ pub struct Let {
 }
 
 #[derive(Debug)]
+pub struct TopLevel {
+    pub range: Span,
+    pub name: String,
+    pub level: Level,
+}
+
+#[derive(Debug)]
 pub enum Term {
     Var(Var),
-    Top(Top),
+    Fun(TopLevel),
+    Data(TopLevel),
+    Const(TopLevel),
 
     Universe(Universe),
     Let(Let),
@@ -196,6 +201,7 @@ impl App {
             write!(f, "(")?;
             self.head.fmt_term(ctx, f)?;
             for arg in &self.spine {
+                write!(f, " ")?;
                 arg.fmt_term(ctx, f)?;
             }
             write!(f, ")")
@@ -213,7 +219,7 @@ impl Var {
     }
 }
 
-impl Top {
+impl TopLevel {
     pub fn fmt_term(&self, _: &NameEnv, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.name)
     }
@@ -235,7 +241,9 @@ impl Term {
     pub fn fmt_term(&self, ctx: &NameEnv, f: &mut fmt::Formatter) -> fmt::Result {
         use Term::*;
         match self {
-            Top(x) => x.fmt_term(ctx, f),
+            Fun(x) => x.fmt_term(ctx, f),
+            Data(x) => x.fmt_term(ctx, f),
+            Const(x) => x.fmt_term(ctx, f),
             Let(x) => x.fmt_term(ctx, f),
             Universe(x) => x.fmt_term(ctx, f),
             Lambda(x) => x.fmt_term(ctx, f),
@@ -281,7 +289,9 @@ impl Term {
             Term::Pair(x) => x.range.clone(),
             Term::Left(x) => x.range.clone(),
             Term::Right(x) => x.range.clone(),
-            Term::Top(x) => x.range.clone(),
+            Term::Fun(x) => x.range.clone(),
+            Term::Data(x) => x.range.clone(),
+            Term::Const(x) => x.range.clone(),
             Term::Var(x) => x.range.clone(),
             Term::App(x) => x.range.clone(),
         }

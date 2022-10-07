@@ -33,7 +33,7 @@ pub struct Pi {
     pub binder: Option<Ident>,
     pub typ: Box<Expr>,
     pub body: Box<Expr>,
-    pub implicit: bool
+    pub implicit: bool,
 }
 #[derive(Debug, Clone)]
 pub struct Lam {
