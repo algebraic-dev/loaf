@@ -18,6 +18,7 @@ pub mod expr;
 pub fn is_data_constructor(term: &Term, name: String) -> Option<Range> {
   match term {
     Term::Pi(Pi { body, .. }) => is_data_constructor(body, name),
+    Term::Data(top) if top.name == name => None,
     Term::App(App { head, .. }) =>  {
       match &*head.clone() {
         Term::Data(top) if top.name == name => None,
@@ -51,7 +52,7 @@ pub fn check_type_decl(ctx: &mut Context, decl: &TypeDecl) -> Result<(), Elabora
       None => (),
     }
     ctx.decls.insert(constr.name.name.clone(), Level(ctx.funs_val.len()));
-    ctx.funs_val.push((eval(&ty_checked, &ctx.env), DeclKind::TypeDecl));
+    ctx.funs_val.push((eval(&ty_checked, &ctx.env), DeclKind::DataDecl));
   };
   Ok(())
 }

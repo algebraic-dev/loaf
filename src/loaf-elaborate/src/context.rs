@@ -14,7 +14,8 @@ use crate::{
 #[derive(Debug, Clone)]
 pub enum DeclKind {
     FunDecl(FunDecl),
-    TypeDecl
+    TypeDecl,
+    DataDecl
 }
 
 #[derive(Debug, Clone)]

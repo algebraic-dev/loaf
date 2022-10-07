@@ -67,7 +67,8 @@ pub fn infer(ctx: &mut Context, ast: &Expr) -> Result<(Rc<Term>, Rc<Value>), Ela
                     };
                     let expr = match &ctx.funs_val[lvl.0].1 {
                         DeclKind::FunDecl(_) => Term::Fun(name),
-                        DeclKind::TypeDecl => Term::Data(name)
+                        DeclKind::TypeDecl => Term::Data(name),
+                        DeclKind::DataDecl => Term::Const(name)
                     };
                     Ok((Rc::new(expr), ty.clone()))
                 }

@@ -24,10 +24,20 @@ fn conv_spine(ctx: &Context, lvl: Level, left: &[Rc<Value>], right: &[Rc<Value>]
     }
 }
 
+pub fn conv_stuck(stuck: &Stuck, stuck1: &Stuck) -> bool {
+    match (stuck, stuck1) {
+        (Stuck::Rigid(x), Stuck::Rigid(y)) => x.0 == y.0,
+        (Stuck::Data(_, x), Stuck::Data(_, y)) => x.0 == y.0,
+        (Stuck::Fun(_, x), Stuck::Fun(_, y)) => x.0 == y.0,
+        (Stuck::Const(_, x), Stuck::Const(_, y)) => x.0 == y.0,
+        _ => false
+    }
+}
+
 pub fn conv(ctx: &Context, lvl: Level, left: Rc<Value>, right: Rc<Value>) -> bool {
     match (&*force(ctx, left), &*force(ctx, right)) {
         (Universe, Universe) => true,
-        (Neutral(Stuck::Rigid(x), sp), Neutral(Stuck::Rigid(x1), sp1)) if x.0 == x1.0 => conv_spine(ctx, lvl, sp, sp1),
+        (Neutral(s, sp), Neutral(f, sp1)) if conv_stuck(s, f) => conv_spine(ctx, lvl, sp, sp1),
         (Pi(n, t, b), Pi(n1, t1, b1)) => conv(ctx, lvl, t.clone(), t1.clone()) && conv(ctx, lvl.inc(), apply_to(b, n.clone(), lvl), apply_to(b1, n1.clone(), lvl)),
         (Lam(n, b), Lam(n1, b1)) => conv(ctx, lvl.inc(), apply_to(b, Some(n.clone()), lvl), apply_to(b1, Some(n1.clone()), lvl)),
         (Sigma(n, t, b), Sigma(n1, t1, b1)) => conv(ctx, lvl, t.clone(), t1.clone()) && conv(ctx, lvl.inc(), apply_to(b, n.clone(), lvl), apply_to(b1, n1.clone(), lvl)),
