@@ -90,6 +90,8 @@ pub enum Term {
     Data(TopLevel),
     Const(TopLevel),
 
+    Hole(Span, usize),
+
     Universe(Universe),
     Let(Let),
 
@@ -241,6 +243,7 @@ impl Term {
     pub fn fmt_term(&self, ctx: &NameEnv, f: &mut fmt::Formatter) -> fmt::Result {
         use Term::*;
         match self {
+            Hole(_, x) => write!(f, "_{}", x),
             Fun(x) => x.fmt_term(ctx, f),
             Data(x) => x.fmt_term(ctx, f),
             Const(x) => x.fmt_term(ctx, f),
@@ -281,6 +284,7 @@ impl<'a> fmt::Display for PairCtxTerm<'a> {
 impl Term {
     pub fn locate(&self) -> loaf_span::Span {
         match self {
+            Term::Hole(x, _) => x.clone(),
             Term::Let(x) => x.range.clone(),
             Term::Universe(x) => x.range.clone(),
             Term::Lambda(x) => x.range.clone(),

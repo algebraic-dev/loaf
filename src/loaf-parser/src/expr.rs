@@ -21,6 +21,7 @@ impl<'cache> Parser<'cache> {
                     range,
                 }))
             }
+            Token::Hole => Ok(Expr::Hole(eat_single!(self, Token::Hole)?.1,)),
             Token::Hlp => Ok(Expr::Hlp(Hlp {
                 range: eat_single!(self, Token::Hlp)?.1,
             })),

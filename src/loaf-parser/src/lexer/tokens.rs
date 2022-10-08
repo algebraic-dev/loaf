@@ -12,6 +12,7 @@ pub enum Token {
     Comma,       // ,
     Pipe,        // |
     Eq,          // =
+    Hole,
 
     // Keywords
     In,   // in
@@ -44,6 +45,7 @@ impl fmt::Display for Token {
             Str(string) => write!(f, "Str '{}'", string),
             LPar => write!(f, "'('"),
             RPar => write!(f, "')'"),
+            Hole => write!(f, "_"),
             Dot => write!(f, "'.'"),
             Colon => write!(f, "':'"),
             Pipe => write!(f, "'|'"),

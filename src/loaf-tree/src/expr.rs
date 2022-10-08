@@ -95,11 +95,13 @@ pub enum Expr {
     Left(Left),
     Right(Right),
     Ann(Ann),
+    Hole(Range)
 }
 
 impl Locatable for Expr {
     fn locate(&self) -> Range {
         match self {
+            Expr::Hole(range) => range.clone(),
             Expr::Typ(Typ { range }) => range.clone(),
             Expr::Lam(Lam { range, .. }) => range.clone(),
             Expr::Let(Let { range, .. }) => range.clone(),
@@ -205,6 +207,7 @@ impl fmt::Display for Expr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use Expr::*;
         match self {
+            Hole(_) => write!(f, "_"),
             Typ(x) => write!(f, "{}", x),
             Hlp(x) => write!(f, "{}", x),
             Lam(x) => write!(f, "{}", x),

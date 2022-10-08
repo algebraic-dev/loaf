@@ -71,7 +71,7 @@ pub fn elaboration_err_to_desc(err: &ElaborationError) -> ErrorDescription {
             );
 
             for (name, (entry, _)) in &ctx.types {
-                let got_str = format!("{}", quote(entry, ctx.env.depth).with_ctx(&ctx.env));
+                let got_str = format!("{}", quote(ctx, entry.clone(), ctx.env.depth).with_ctx(&ctx.env));
                 err.add_subtitle(
                     Color::Snd,
                     Phrase {

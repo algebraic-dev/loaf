@@ -34,6 +34,8 @@ pub enum Value {
     // Right
     Right(Rc<Value>),
 
+    Hole(usize),
+
     // Universe / Type of Types.
     Universe,
 }

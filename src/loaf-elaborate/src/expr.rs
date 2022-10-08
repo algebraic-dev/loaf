@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
-use crate::context::{force, Context, DeclKind};
-use crate::conv;
+use crate::context::{force, Context, DeclKind, Hole};
+use crate::unify;
 use crate::errors::{BinderKind, ElaborationError};
 use crate::eval::{apply, eval, quote};
 
@@ -12,6 +12,7 @@ use loaf_span::{Locatable, Span};
 use loaf_tree::Expr;
 
 pub fn check(ctx: &mut Context, ast: &Expr, typ: Rc<Value>) -> Result<Rc<Term>, ElaborationError> {
+    let typ = force(ctx, typ);
     match (ast, &*typ) {
         (Expr::Lam(lambda), Value::Pi(name, typ, body)) => {
             ctx.with_pos(lambda.range.clone());
@@ -27,15 +28,15 @@ pub fn check(ctx: &mut Context, ast: &Expr, typ: Rc<Value>) -> Result<Rc<Term>, 
         }
         (Expr::Hlp(hlp), _) => {
             ctx.with_pos(hlp.range.clone());
-            Err(ElaborationError::Inspection(ctx.clone(), quote(&typ, ctx.env.depth)))
+            Err(ElaborationError::Inspection(ctx.clone(), quote(ctx, typ, ctx.env.depth)))
         }
         (ast, _) => {
             ctx.with_pos(ast.locate());
             let (ast_res, infered) = infer(ctx, ast)?;
-            if conv::conv(ctx, ctx.env.depth, infered.clone(), typ.clone()) {
+            if unify::unify(ctx, ctx.env.depth, infered.clone(), typ.clone()) {
                 Ok(ast_res)
             } else {
-                Err(ElaborationError::Mismatch(ctx.clone(), quote(&infered, ctx.env.depth), quote(&typ, ctx.env.depth)))
+                Err(ElaborationError::Mismatch(ctx.clone(), quote(ctx, infered, ctx.env.depth), quote(ctx, typ, ctx.env.depth)))
             }
         }
     }
@@ -43,6 +44,14 @@ pub fn check(ctx: &mut Context, ast: &Expr, typ: Rc<Value>) -> Result<Rc<Term>, 
 
 pub fn infer(ctx: &mut Context, ast: &Expr) -> Result<(Rc<Term>, Rc<Value>), ElaborationError> {
     match ast {
+        Expr::Hole(range) => {
+            ctx.holes.push(Hole::Empty);
+            ctx.holes.push(Hole::Empty);
+            Ok((
+                Rc::new(Term::Hole(Span::Localized(range.clone()),  ctx.holes.len() - 2)),
+                Rc::new(Value::Hole(ctx.holes.len() - 1))
+            ))
+        }
         Expr::Typ(typ) => Ok((
             (Rc::new(Term::Universe(Universe {
                 range: Span::Localized(typ.range.clone()),
@@ -86,7 +95,7 @@ pub fn infer(ctx: &mut Context, ast: &Expr) -> Result<(Rc<Term>, Rc<Value>), Ela
                 }
                 None => {
                     let (val_res, typ_eval) = infer(ctx, &letd.val)?;
-                    Ok((val_res, quote(&typ_eval, ctx.env.depth), typ_eval))
+                    Ok((val_res, quote(ctx, typ_eval.clone(), ctx.env.depth), typ_eval))
                 }
             }?;
             // Probably we need to do it lazyly in the future?
@@ -134,7 +143,7 @@ pub fn infer(ctx: &mut Context, ast: &Expr) -> Result<(Rc<Term>, Rc<Value>), Ela
                     }
                     _ => {
                         ctx.with_pos(app.head.locate());
-                        return Err(ElaborationError::ExpectedType(ctx.clone(), BinderKind::PiType, arg.locate(), quote(&res_ty, ctx.env.depth)));
+                        return Err(ElaborationError::ExpectedType(ctx.clone(), BinderKind::PiType, arg.locate(), quote(ctx, res_ty, ctx.env.depth)));
                     }
                 }
             }
@@ -175,7 +184,7 @@ pub fn infer(ctx: &mut Context, ast: &Expr) -> Result<(Rc<Term>, Rc<Value>), Ela
                     fst: fst_elab,
                     snd: snd_elab,
                 })),
-                Rc::new(Value::Sigma(None, fst_ty, Closure::new(&ctx.env, &quote(&snd_ty, ctx.env.depth)))),
+                Rc::new(Value::Sigma(None, fst_ty, Closure::new(&ctx.env.clone(), &quote(ctx, snd_ty, ctx.env.depth)))),
             ))
         }
         Expr::Left(left) => {
@@ -193,7 +202,7 @@ pub fn infer(ctx: &mut Context, ast: &Expr) -> Result<(Rc<Term>, Rc<Value>), Ela
                     ctx.clone(),
                     BinderKind::SigmaType,
                     left.expr.locate(),
-                    quote(&typ_res, ctx.env.depth),
+                    quote(ctx, typ_res, ctx.env.depth),
                 )),
             }
         }
@@ -215,7 +224,7 @@ pub fn infer(ctx: &mut Context, ast: &Expr) -> Result<(Rc<Term>, Rc<Value>), Ela
                     ctx.clone(),
                     BinderKind::SigmaType,
                     right.expr.locate(),
-                    quote(&typ_res, ctx.env.depth),
+                    quote(ctx, typ_res, ctx.env.depth),
                 )),
             }
         }

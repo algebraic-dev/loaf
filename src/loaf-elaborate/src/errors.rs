@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use loaf_core::term::Term;
-use loaf_span::{Range, Span};
+use loaf_span::Range;
 
 use crate::context::Context;
 

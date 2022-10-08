@@ -19,12 +19,20 @@ pub enum DeclKind {
 }
 
 #[derive(Debug, Clone)]
+pub enum Hole<T> {
+    Filled(T),
+    Empty
+}
+
+#[derive(Debug, Clone)]
 pub struct Context {
     pub env: Env,
     pub types: Vec<(String, (Rc<Value>, Level))>,
     pub decls: HashMap<String, Level>,
     pub funs_val: Vec<(Rc<Value>, DeclKind)>,
     pub pos: Range,
+
+    pub holes: Vec<Hole<Rc<Value>>>,
 }
 
 pub fn force(ctx: &Context, val: Rc<Value>) -> Rc<Value> {
@@ -33,6 +41,13 @@ pub fn force(ctx: &Context, val: Rc<Value>) -> Rc<Value> {
             DeclKind::FunDecl(FunDecl::Value(val)) => eval_apply(val.clone(), args),
             _ => todo!(),
         },
+        Value::Hole(hole) => {
+            if let Hole::Filled(res) = &ctx.holes[*hole] {
+                res.clone()
+            } else {
+                val
+            }
+        }
         _ => val,
     }
 }
@@ -48,6 +63,7 @@ impl Context {
             decls: HashMap::new(),
             funs_val: Vec::new(),
             types: Vec::new(),
+            holes: Vec::new(),
             pos: Range::new(Position::new(0, 0, 0), Position::new(0, 0, 0)),
         }
     }

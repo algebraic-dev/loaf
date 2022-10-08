@@ -5,11 +5,11 @@ use errors::ElaborationError;
 use eval::eval;
 use expr::check;
 use loaf_core::{types::Level, value::Value, term::{Term, Pi, App}};
-use loaf_span::{Span, Range};
+use loaf_span::Range;
 use loaf_tree::{DeclRes, TopLevel, TypeDecl};
 
 pub mod context;
-pub mod conv;
+pub mod unify;
 pub mod decls;
 pub mod errors;
 pub mod eval;

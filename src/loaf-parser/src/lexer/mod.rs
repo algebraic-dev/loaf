@@ -137,6 +137,7 @@ impl<'cache> Lexer<'cache> {
                 'Π' => self.single_token(&mut peekable, Token::Pi),
                 'Σ' => self.single_token(&mut peekable, Token::Sigma),
                 '?' => self.single_token(&mut peekable, Token::Hlp),
+                '_' => self.single_token(&mut peekable, Token::Hole),
                 '"' => self.lex_string(start, &mut peekable),
                 c if is_digit(*c) => self.lex_number(start, &mut peekable),
                 c if is_valid_id(*c) => self.lex_id(start, &mut peekable),

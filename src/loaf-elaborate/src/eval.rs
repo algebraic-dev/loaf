@@ -7,6 +7,8 @@ use loaf_core::{
 };
 use loaf_span::Span;
 
+use crate::context::{Context, force};
+
 pub fn eval_apply(head: Rc<Value>, spine: &Vec<Rc<Value>>) -> Rc<Value> {
     let mut head = head;
     for arg in spine {
@@ -51,42 +53,43 @@ pub fn quote_stuck(stuck: &Stuck, base: Level) -> Rc<Term> {
     }
 }
 
-pub fn quote(val: &Value, depth: Level) -> Rc<Term> {
-    match val {
+pub fn quote(ctx: &Context, val: Rc<Value>, depth: Level) -> Rc<Term> {
+    match &*force(ctx, val) {
+        Value::Hole(num) => Rc::new(Term::Hole(Span::Generated, *num)),
         Value::Neutral(stuck, spine) => Rc::new(Term::App(App {
             range: Span::Generated,
             head: quote_stuck(stuck, depth),
-            spine: spine.iter().map(|x| quote(&x, depth)).collect(),
+            spine: spine.iter().map(|x| quote(ctx, x.clone(), depth)).collect(),
         })),
         Value::Lam(binder, body) => Rc::new(Term::Lambda(Lambda {
             range: Span::Generated,
             binder: binder.clone(),
-            body: quote(&apply(body, Some(binder.clone()), Rc::new(Value::var(depth))), depth.inc()),
+            body: quote(ctx, apply(body, Some(binder.clone()), Rc::new(Value::var(depth))), depth.inc()),
         })),
         Value::Pi(binder, ty, body) => Rc::new(Term::Pi(Pi {
             range: Span::Generated,
             binder: binder.clone(),
-            typ: quote(ty, depth),
-            body: quote(&apply(body, binder.clone(), Rc::new(Value::var(depth))), depth.inc()),
+            typ: quote(ctx, ty.clone(), depth),
+            body: quote(ctx, apply(body, binder.clone(), Rc::new(Value::var(depth))), depth.inc()),
         })),
         Value::Sigma(binder, ty, body) => Rc::new(Term::Sigma(Sigma {
             range: Span::Generated,
             binder: binder.clone(),
-            typ: quote(&ty, depth),
-            body: quote(&apply(&body, binder.clone(), Rc::new(Value::var(depth))), depth.inc()),
+            typ: quote(ctx, ty.clone(), depth),
+            body: quote(ctx, apply(&body, binder.clone(), Rc::new(Value::var(depth))), depth.inc()),
         })),
         Value::Pair(fst, snd) => Rc::new(Term::Pair(Pair {
             range: Span::Generated,
-            fst: quote(fst, depth),
-            snd: quote(snd, depth),
+            fst: quote(ctx, fst.clone(), depth),
+            snd: quote(ctx, snd.clone(), depth),
         })),
         Value::Left(expr) => Rc::new(Term::Left(Left {
             range: Span::Generated,
-            term: quote(expr, depth),
+            term: quote(ctx, expr.clone(), depth),
         })),
         Value::Right(expr) => Rc::new(Term::Right(Right {
             range: Span::Generated,
-            term: quote(expr, depth),
+            term: quote(ctx, expr.clone(), depth),
         })),
         Value::Universe => Rc::new(Term::Universe(Universe { range: Span::Generated })),
     }
@@ -100,6 +103,7 @@ pub fn eval_app(app: &App, env: &Env) -> Rc<Value> {
 
 pub fn eval(term: &Term, env: &Env) -> Rc<Value> {
     match term {
+        Term::Hole(_, num) => Rc::new(Value::Hole(*num)),
         Term::Let(term) => eval(&term.then, &env.add(Some(term.binder.clone()), eval(&term.val, env))),
         Term::Fun(top) => Rc::new(Value::Neutral(Stuck::Fun(top.name.clone(), top.level), vec![])),
         Term::Data(top) => Rc::new(Value::Neutral(Stuck::Data(top.name.clone(), top.level), vec![])),
