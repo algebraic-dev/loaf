@@ -39,14 +39,14 @@ impl<'cache> Parser<'cache> {
 
     fn parse_equation(&mut self) -> Result<Equation, SyntaxError> {
         self.eat(match_single!(Token::Pipe))?;
-        let mut rules = vec![self.parse_pat()?];
+        let mut pats = vec![self.parse_pat()?];
         while let Token::Comma = self.get() {
             self.eat(match_single!(Token::Comma))?;
-            rules.push(self.parse_pat()?);
+            pats.push(self.parse_pat()?);
         }
         self.eat(match_single!(Token::Eq))?;
         let body = self.parse_expr()?;
-        Ok(Equation { rules, value: Box::new(body) })
+        Ok(Equation { pats, value: Box::new(body) })
     }
 
     fn parse_constructor(&mut self) -> Result<Constructor, SyntaxError> {
@@ -74,7 +74,6 @@ impl<'cache> Parser<'cache> {
         let name = self.parse_id()?;
         self.eat(match_single!(Token::Colon))?;
         let typ = Box::new(self.parse_expr()?);
-        self.eat(match_single!(Token::Eq))?;
         if *self.get() == Token::Pipe {
             let mut rules = Vec::new();
             while *self.get() == Token::Pipe {
@@ -86,6 +85,7 @@ impl<'cache> Parser<'cache> {
                 value: DeclRes::Pattern(rules),
             })
         } else {
+            self.eat(match_single!(Token::Eq))?;
             let res = self.parse_expr()?;
             Ok(Decl {
                 name,

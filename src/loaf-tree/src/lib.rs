@@ -14,7 +14,7 @@ pub enum Pat {
 
 #[derive(Debug)]
 pub struct Equation {
-    pub rules: Vec<Pat>,
+    pub pats: Vec<Pat>,
     pub value: Box<Expr>,
 }
 
@@ -67,7 +67,7 @@ impl fmt::Display for Pat {
                 }
             }
             Pat::Absurd => {
-                write!(f, ".")
+                write!(f, "(.)")
             }
         }
     }
@@ -75,7 +75,7 @@ impl fmt::Display for Pat {
 
 impl fmt::Display for Equation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let res = self.rules.iter().map(|x| format!("{}", x)).collect::<Vec<String>>().join(" ");
+        let res = self.pats.iter().map(|x| format!("{}", x)).collect::<Vec<String>>().join(" ");
         write!(f, "(| {} := {})", res, self.value)
     }
 }

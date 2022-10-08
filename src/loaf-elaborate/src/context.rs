@@ -67,8 +67,23 @@ impl Context {
             pos: Range::new(Position::new(0, 0, 0), Position::new(0, 0, 0)),
         }
     }
+
+    pub fn find_local(&mut self, name: &String) -> Option<(Rc<Value>, Level)> {
+        self.types.iter().find(|x| x.0 == *name).map(|x| x.1.clone())
+    }
+
     pub fn with_pos(&mut self, pos: Range) {
         self.pos = pos
+    }
+
+    pub fn with_ty_mut(&mut self, name: Option<String>, typ: Rc<Value>) {
+        if let Some(name) = name.clone() {
+            self.types = self.types.clone();
+            self.types.push((name, (typ, self.env.depth)));
+        };
+        self.env.vars.push_front(Rc::new(Value::var(self.env.depth)));
+        self.env.names.push_front(name);
+        self.env.depth = self.env.depth.inc();
     }
 
     pub fn with_ty(&self, name: Option<String>, typ: Rc<Value>) -> Context {

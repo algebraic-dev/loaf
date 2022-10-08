@@ -32,7 +32,7 @@ pub fn conv_stuck(stuck: &Stuck, stuck1: &Stuck) -> bool {
         (Stuck::Data(_, x), Stuck::Data(_, y)) => x.0 == y.0,
         (Stuck::Fun(_, x), Stuck::Fun(_, y)) => x.0 == y.0,
         (Stuck::Const(_, x), Stuck::Const(_, y)) => x.0 == y.0,
-        _ => false
+        _ => false,
     }
 }
 
@@ -49,26 +49,20 @@ pub fn unify(ctx: &mut Context, lvl: Level, left: Rc<Value>, right: Rc<Value>) -
         (Left(t), Left(t1)) => unify(ctx, lvl, t.clone(), t1.clone()),
         (Right(t), Right(t1)) => unify(ctx, lvl, t.clone(), t1.clone()),
         (Hole(n), Hole(m)) if n == m => true,
-        (Hole(l), _) => {
-            match &ctx.holes[*l] {
-                Holes::Filled(n) => {
-                    unify(ctx, lvl, n.clone(), r)},
-                Holes::Empty     => {
-                    ctx.holes[*l] = Holes::Filled(r);
-                    true
-                },
+        (Hole(l), _) => match &ctx.holes[*l] {
+            Holes::Filled(n) => unify(ctx, lvl, n.clone(), r),
+            Holes::Empty => {
+                ctx.holes[*l] = Holes::Filled(r);
+                true
             }
-        }
-        (_, Hole(n)) => {
-            match &ctx.holes[*n] {
-                Holes::Filled(n) => unify(ctx, lvl, l, n.clone()),
-                Holes::Empty     => {
-                    println!("Solving {} to {}", n, quote(ctx, l.clone(), lvl));
-                    ctx.holes[*n] = Holes::Filled(l.clone());
-                    true
-                },
+        },
+        (_, Hole(n)) => match &ctx.holes[*n] {
+            Holes::Filled(n) => unify(ctx, lvl, l, n.clone()),
+            Holes::Empty => {
+                ctx.holes[*n] = Holes::Filled(l.clone());
+                true
             }
-        }
+        },
         (_, _) => false,
     }
 }

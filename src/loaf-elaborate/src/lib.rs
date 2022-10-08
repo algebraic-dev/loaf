@@ -4,57 +4,58 @@ use context::{Context, DeclKind};
 use errors::ElaborationError;
 use eval::eval;
 use expr::check;
-use loaf_core::{types::Level, value::Value, term::{Term, Pi, App}};
+use loaf_core::term::{App, Pi, Term};
+use loaf_core::{types::Level, value::Value};
 use loaf_span::Range;
 use loaf_tree::{DeclRes, TopLevel, TypeDecl};
+use pat::check_pats;
 
 pub mod context;
-pub mod unify;
 pub mod decls;
 pub mod errors;
 pub mod eval;
 pub mod expr;
+pub mod pat;
+pub mod unify;
 
 pub fn is_data_constructor(term: &Term, name: String) -> Option<Range> {
-  match term {
-    Term::Pi(Pi { body, .. }) => is_data_constructor(body, name),
-    Term::Data(top) if top.name == name => None,
-    Term::App(App { head, .. }) =>  {
-      match &*head.clone() {
+    match term {
+        Term::Pi(Pi { body, .. }) => is_data_constructor(body, name),
         Term::Data(top) if top.name == name => None,
-        _ => head.locate().to_range(),
-      }
-    },
-    _ => term.locate().to_range(),
-  }
+        Term::App(App { head, .. }) => match &*head.clone() {
+            Term::Data(top) if top.name == name => None,
+            _ => head.locate().to_range(),
+        },
+        _ => term.locate().to_range(),
+    }
 }
 
 pub fn is_type_constructor(term: &Term) -> Option<Range> {
     match term {
-      Term::Pi(Pi { body, .. }) => is_type_constructor(body),
-      Term::Universe(_) => None,
-      _ => term.locate().to_range()
+        Term::Pi(Pi { body, .. }) => is_type_constructor(body),
+        Term::Universe(_) => None,
+        _ => term.locate().to_range(),
     }
 }
 
 pub fn check_type_decl(ctx: &mut Context, decl: &TypeDecl) -> Result<(), ElaborationError> {
-  let ty_checked = check(ctx, &decl.typ, Rc::new(Value::Universe))?;
-  match is_type_constructor(&ty_checked) {
-    Some(span) => return Err(ElaborationError::NotATypeConstructor(span)),
-    None => (),
-  }
-  ctx.decls.insert(decl.name.name.clone(), Level(ctx.funs_val.len()));
-  ctx.funs_val.push((eval(&ty_checked, &ctx.env), DeclKind::TypeDecl));
-  for constr in &decl.constructors {
-    let ty_checked = check(ctx, &constr.typ, Rc::new(Value::Universe))?;
-    match is_data_constructor(&ty_checked, decl.name.name.clone()) {
-      Some(span) => return Err(ElaborationError::NotADataConstructor(span, decl.name.name.clone())),
-      None => (),
+    let ty_checked = check(ctx, &decl.typ, Rc::new(Value::Universe))?;
+    match is_type_constructor(&ty_checked) {
+        Some(span) => return Err(ElaborationError::NotATypeConstructor(span)),
+        None => (),
     }
-    ctx.decls.insert(constr.name.name.clone(), Level(ctx.funs_val.len()));
-    ctx.funs_val.push((eval(&ty_checked, &ctx.env), DeclKind::DataDecl));
-  };
-  Ok(())
+    ctx.decls.insert(decl.name.name.clone(), Level(ctx.funs_val.len()));
+    ctx.funs_val.push((eval(&ty_checked, &ctx.env), DeclKind::TypeDecl));
+    for constr in &decl.constructors {
+        let ty_checked = check(ctx, &constr.typ, Rc::new(Value::Universe))?;
+        match is_data_constructor(&ty_checked, decl.name.name.clone()) {
+            Some(span) => return Err(ElaborationError::NotADataConstructor(span, decl.name.name.clone())),
+            None => (),
+        }
+        ctx.decls.insert(constr.name.name.clone(), Level(ctx.funs_val.len()));
+        ctx.funs_val.push((eval(&ty_checked, &ctx.env), DeclKind::DataDecl));
+    }
+    Ok(())
 }
 
 pub fn check_decls(ctx: &mut Context, defs: &Vec<TopLevel>) -> Result<(), ElaborationError> {
@@ -70,8 +71,9 @@ pub fn check_decls(ctx: &mut Context, defs: &Vec<TopLevel>) -> Result<(), Elabor
                         ctx.decls.insert(decl.name.name.clone(), Level(ctx.funs_val.len()));
                         ctx.funs_val.push((ty_evaluated, DeclKind::FunDecl(decls::FunDecl::Value(eval(&val, &ctx.env)))));
                     }
-                    DeclRes::Pattern(_) => {
-                        todo!()
+                    DeclRes::Pattern(res) => {
+                      check_pats(ctx, res, ty_evaluated)?;
+                      todo!()
                     }
                 }
             }

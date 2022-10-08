@@ -37,6 +37,12 @@ pub fn elaboration_err_to_desc(err: &ElaborationError) -> ErrorDescription {
             err.add_pos(Annotation::bright(Color::Fst, "Here!", range.clone()));
             err
         }
+        ElaborationError::NonLinear(range, name) => {
+            let mut err = ErrorDescription::new(1, range.clone());
+            err.set_title(Phrase::new(Style::Bright, vec![Normal("Variable".to_string()), Quoted(name.to_string()), Normal("is not linear".to_string())]));
+            err.add_pos(Annotation::bright(Color::Fst, "Here!", range.clone()));
+            err
+        }
         ElaborationError::NotADataConstructor(range, name) => {
             let mut err = ErrorDescription::new(1, range.clone());
             err.set_title(Phrase::new(Style::Bright, vec![Normal("Not a data constructor of".to_string()), Quoted(name.to_string())]));
